@@ -40,4 +40,7 @@ Run the Fuzzer:
 ```bash
 python run_fuzzer.py [http://127.0.0.1:8000/api/users](http://127.0.0.1:8000/api/users) --template user_template.json --concurrency 10 --output fuzz_results.json
 ```
+<img width="1919" height="1021" alt="Screenshot 2026-05-31 155331" src="https://github.com/user-attachments/assets/08da170a-f416-4100-a665-78bf0b92b9bb" />
+<img width="1915" height="814" alt="Screenshot 2026-05-31 155429" src="https://github.com/user-attachments/assets/884862f0-305e-4057-969d-b11fcbab172d" />
+
 
