@@ -29,3 +29,15 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
+```
+# Usage
+
+Start your target server:
+```bash
+python -m uvicorn mock_server:app --port 8000
+```
+Run the Fuzzer:
+```bash
+python run_fuzzer.py [http://127.0.0.1:8000/api/users](http://127.0.0.1:8000/api/users) --template user_template.json --concurrency 10 --output fuzz_results.json
+```
+
