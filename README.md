@@ -42,5 +42,7 @@ python run_fuzzer.py [http://127.0.0.1:8000/api/users](http://127.0.0.1:8000/api
 ```
 <img width="1919" height="1021" alt="Screenshot 2026-05-31 155331" src="https://github.com/user-attachments/assets/08da170a-f416-4100-a665-78bf0b92b9bb" />
 <img width="1915" height="814" alt="Screenshot 2026-05-31 155429" src="https://github.com/user-attachments/assets/884862f0-305e-4057-969d-b11fcbab172d" />
+<img width="1899" height="363" alt="Screenshot 2026-05-31 155448" src="https://github.com/user-attachments/assets/2dd528cf-9ffc-49c9-81b4-58d0ad04f431" />
+
 
 
