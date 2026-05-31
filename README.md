@@ -19,14 +19,14 @@ A high-performance, asynchronous CLI tool designed for API reliability testing a
 
 # Setup:
 
-bash
-# Clone the repository
+```bash
+- Clone the repository
 git clone [https://github.com/sanjay45xe/api-fuzzer-cli](https://github.com/sanjay45xe/api-fuzzer-cli)
 cd api-fuzzer-cli
 
-# Create and activate virtual environment
+- Create and activate virtual environment
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 
-# Install dependencies
+- Install dependencies
 pip install -r requirements.txt
