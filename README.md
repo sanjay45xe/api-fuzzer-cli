@@ -1,8 +1,8 @@
-API Fuzzer CLI
+# API Fuzzer CLI
 
 A high-performance, asynchronous CLI tool designed for API reliability testing and vulnerability discovery. This tool helps engineers identify input validation gaps, parser vulnerabilities, and unhandled server errors by stress-testing API endpoints with malformed and boundary-breaking payloads.
 
-🛠 Features
+# Features
 
 - Asynchronous Execution**: Built with `httpx` and `asyncio` to handle high-concurrency request loads efficiently.
 - Intelligent Payload Generation**:
@@ -12,12 +12,12 @@ A high-performance, asynchronous CLI tool designed for API reliability testing a
 - Real-time Observability**: A live terminal dashboard (using `Rich`) providing status code counts, latency distribution histograms, and progress tracking.
 - Structured Reporting**: Automatically exports every event, payload, and response to `fuzz_results.json` for post-test analysis.
 
-Quick Start
+# Quick Start
 
-Prerequisites:
+# Prerequisites:
 - Python 3.9+
 
-Setup:
+# Setup:
 
 bash
 # Clone the repository
