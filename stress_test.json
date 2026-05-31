@@ -1,0 +1,634 @@
+[
+  {
+    "payload": "",
+    "is_malformed_json": true,
+    "status_code": 400,
+    "ttfb": 0.10705370001960546,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"error\":\"Malformed JSON syntax\",\"details\":\"Expecting value: line 1 column 1 (char 0)\"}"
+  },
+  {
+    "payload": "{\"key\": \u0000\u0001\u0002}",
+    "is_malformed_json": true,
+    "status_code": 400,
+    "ttfb": 0.11173390003386885,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"error\":\"Malformed JSON syntax\",\"details\":\"Expecting value: line 1 column 9 (char 8)\"}"
+  },
+  {
+    "payload": "{\"key\": \"value\",}",
+    "is_malformed_json": true,
+    "status_code": 400,
+    "ttfb": 0.1147173999925144,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"error\":\"Malformed JSON syntax\",\"details\":\"Illegal trailing comma before end of object: line 1 column 16 (char 15)\"}"
+  },
+  {
+    "payload": "{\"key\": \"value\" \"key2\": 1}",
+    "is_malformed_json": true,
+    "status_code": 400,
+    "ttfb": 0.11656920000677928,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"error\":\"Malformed JSON syntax\",\"details\":\"Expecting ',' delimiter: line 1 column 17 (char 16)\"}"
+  },
+  {
+    "payload": "[1, 2, 3,",
+    "is_malformed_json": true,
+    "status_code": 400,
+    "ttfb": 0.1163815000327304,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"error\":\"Malformed JSON syntax\",\"details\":\"Expecting value: line 1 column 10 (char 9)\"}"
+  },
+  {
+    "payload": "{\"key\": \"value\"",
+    "is_malformed_json": true,
+    "status_code": 400,
+    "ttfb": 0.12337159999879077,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"error\":\"Malformed JSON syntax\",\"details\":\"Expecting ',' delimiter: line 1 column 16 (char 15)\"}"
+  },
+  {
+    "payload": "{\"key\": \"value\"}extra_junk",
+    "is_malformed_json": true,
+    "status_code": 400,
+    "ttfb": 0.11591290001524612,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"error\":\"Malformed JSON syntax\",\"details\":\"Extra data: line 1 column 17 (char 16)\"}"
+  },
+  {
+    "payload": "{}",
+    "is_malformed_json": true,
+    "status_code": 200,
+    "ttfb": 0.11517589999129996,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"status\":\"success\",\"message\":\"User validation succeeded\",\"received\":{\"username\":null,\"age\":null,\"is_active\":null}}"
+  },
+  {
+    "payload": "{\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": {\"a\": 1}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}",
+    "is_malformed_json": true,
+    "status_code": 400,
+    "ttfb": 0.11913720000302419,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"error\":\"Malformed JSON syntax\",\"details\":\"Expecting ',' delimiter: line 1 column 652 (char 651)\"}"
+  },
+  {
+    "payload": {
+      "username": "alice",
+      "age": 30,
+      "is_active": true
+    },
+    "is_malformed_json": false,
+    "status_code": 200,
+    "ttfb": 0.11598060000687838,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"status\":\"success\",\"message\":\"User validation succeeded\",\"received\":{\"username\":\"alice\",\"age\":30,\"is_active\":true}}"
+  },
+  {
+    "payload": "null",
+    "is_malformed_json": true,
+    "status_code": 500,
+    "ttfb": 0.11605080001754686,
+    "timeout": false,
+    "error": null,
+    "response_body": "Internal Server Error"
+  },
+  {
+    "payload": "[]",
+    "is_malformed_json": true,
+    "status_code": 500,
+    "ttfb": 0.1164166999515146,
+    "timeout": false,
+    "error": null,
+    "response_body": "Internal Server Error"
+  },
+  {
+    "payload": {
+      "username": true,
+      "age": 30,
+      "is_active": true
+    },
+    "is_malformed_json": false,
+    "status_code": 422,
+    "ttfb": 0.11860069999238476,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"error\":\"Unprocessable Entity\",\"details\":\"username must be a string\"}"
+  },
+  {
+    "payload": {
+      "username": false,
+      "age": 30,
+      "is_active": true
+    },
+    "is_malformed_json": false,
+    "status_code": 422,
+    "ttfb": 0.11835309996968135,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"error\":\"Unprocessable Entity\",\"details\":\"username must be a string\"}"
+  },
+  {
+    "payload": {
+      "username": null,
+      "age": 30,
+      "is_active": true
+    },
+    "is_malformed_json": false,
+    "status_code": 200,
+    "ttfb": 0.11806949996389449,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"status\":\"success\",\"message\":\"User validation succeeded\",\"received\":{\"username\":null,\"age\":30,\"is_active\":true}}"
+  },
+  {
+    "payload": {
+      "username": 12345,
+      "age": 30,
+      "is_active": true
+    },
+    "is_malformed_json": false,
+    "status_code": 422,
+    "ttfb": 0.1211341000162065,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"error\":\"Unprocessable Entity\",\"details\":\"username must be a string\"}"
+  },
+  {
+    "payload": {
+      "username": [],
+      "age": 30,
+      "is_active": true
+    },
+    "is_malformed_json": false,
+    "status_code": 500,
+    "ttfb": 0.11578370002098382,
+    "timeout": false,
+    "error": null,
+    "response_body": "Internal Server Error"
+  },
+  {
+    "payload": {
+      "username": {},
+      "age": 30,
+      "is_active": true
+    },
+    "is_malformed_json": false,
+    "status_code": 500,
+    "ttfb": 0.11693880002712831,
+    "timeout": false,
+    "error": null,
+    "response_body": "Internal Server Error"
+  },
+  {
+    "payload": {
+      "username": "\"'%;()&+--",
+      "age": 30,
+      "is_active": true
+    },
+    "is_malformed_json": false,
+    "status_code": 200,
+    "ttfb": 0.11916960001690313,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"status\":\"success\",\"message\":\"User validation succeeded\",\"received\":{\"username\":\"\\\"'%;()&+--\",\"age\":30,\"is_active\":true}}"
+  },
+  {
+    "payload": {
+      "username": "",
+      "age": 30,
+      "is_active": true
+    },
+    "is_malformed_json": false,
+    "status_code": 200,
+    "ttfb": 0.12267790001351386,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"status\":\"success\",\"message\":\"User validation succeeded\",\"received\":{\"username\":\"\",\"age\":30,\"is_active\":true}}"
+  },
+  {
+    "payload": {
+      "username": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "age": 30,
+      "is_active": true
+    },
+    "is_malformed_json": false,
+    "status_code": 200,
+    "ttfb": 0.12244730000384152,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"status\":\"success\",\"message\":\"User validation succeeded\",\"received\":{\"username\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\",\"age\":30,\"is_active\":true}}"
+  },
+  {
+    "payload": {
+      "username": "../../etc/passwd",
+      "age": 30,
+      "is_active": true
+    },
+    "is_malformed_json": false,
+    "status_code": 500,
+    "ttfb": 0.11928949999855831,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"detail\":\"Security Filter Failure: Uncaught exception in sandbox checker.\"}"
+  },
+  {
+    "payload": {
+      "username": "\ud83d\ude80\ud83d\udd25\u2728",
+      "age": 30,
+      "is_active": true
+    },
+    "is_malformed_json": false,
+    "status_code": 200,
+    "ttfb": 0.11898650001967326,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"status\":\"success\",\"message\":\"User validation succeeded\",\"received\":{\"username\":\"\ud83d\ude80\ud83d\udd25\u2728\",\"age\":30,\"is_active\":true}}"
+  },
+  {
+    "payload": {
+      "username": "\u0000",
+      "age": 30,
+      "is_active": true
+    },
+    "is_malformed_json": false,
+    "status_code": 200,
+    "ttfb": 0.12085300002945587,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"status\":\"success\",\"message\":\"User validation succeeded\",\"received\":{\"username\":\"\\u0000\",\"age\":30,\"is_active\":true}}"
+  },
+  {
+    "payload": {
+      "username": "alice",
+      "age": false,
+      "is_active": true
+    },
+    "is_malformed_json": false,
+    "status_code": 422,
+    "ttfb": 0.11780190002173185,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"error\":\"Unprocessable Entity\",\"details\":\"age must be a number\"}"
+  },
+  {
+    "payload": {
+      "username": "alice",
+      "age": true,
+      "is_active": true
+    },
+    "is_malformed_json": false,
+    "status_code": 422,
+    "ttfb": 0.11907169996993616,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"error\":\"Unprocessable Entity\",\"details\":\"age must be a number\"}"
+  },
+  {
+    "payload": {
+      "username": "alice",
+      "age": null,
+      "is_active": true
+    },
+    "is_malformed_json": false,
+    "status_code": 200,
+    "ttfb": 0.11795069999061525,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"status\":\"success\",\"message\":\"User validation succeeded\",\"received\":{\"username\":\"alice\",\"age\":null,\"is_active\":true}}"
+  },
+  {
+    "payload": {
+      "username": "alice",
+      "age": [],
+      "is_active": true
+    },
+    "is_malformed_json": false,
+    "status_code": 422,
+    "ttfb": 0.11761449999175966,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"error\":\"Unprocessable Entity\",\"details\":\"age must be a number\"}"
+  },
+  {
+    "payload": {
+      "username": "alice",
+      "age": "string_type_swap",
+      "is_active": true
+    },
+    "is_malformed_json": false,
+    "status_code": 422,
+    "ttfb": 0.12106799997854978,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"error\":\"Unprocessable Entity\",\"details\":\"age must be a number\"}"
+  },
+  {
+    "payload": {
+      "username": "alice",
+      "age": {},
+      "is_active": true
+    },
+    "is_malformed_json": false,
+    "status_code": 422,
+    "ttfb": 0.11782649997621775,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"error\":\"Unprocessable Entity\",\"details\":\"age must be a number\"}"
+  },
+  {
+    "payload": {
+      "username": "alice",
+      "age": 0,
+      "is_active": true
+    },
+    "is_malformed_json": false,
+    "status_code": 200,
+    "ttfb": 0.11753450002288446,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"status\":\"success\",\"message\":\"User validation succeeded\",\"received\":{\"username\":\"alice\",\"age\":0,\"is_active\":true}}"
+  },
+  {
+    "payload": {
+      "username": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "age": 30,
+      "is_active": true
+    },
+    "is_malformed_json": false,
+    "status_code": 400,
+    "ttfb": 0.1266890999977477,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"error\":\"Bad Request\",\"details\":\"username must be under 500 characters.\"}"
+  },
+  {
+    "payload": {
+      "username": "alice",
+      "age": 2147483647,
+      "is_active": true
+    },
+    "is_malformed_json": false,
+    "status_code": 200,
+    "ttfb": 0.11691469996003434,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"status\":\"success\",\"message\":\"User validation succeeded\",\"received\":{\"username\":\"alice\",\"age\":2147483647,\"is_active\":true}}"
+  },
+  {
+    "payload": {
+      "username": "alice",
+      "age": 9223372036854775807,
+      "is_active": true
+    },
+    "is_malformed_json": false,
+    "status_code": 200,
+    "ttfb": 0.11588019999908283,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"status\":\"success\",\"message\":\"User validation succeeded\",\"received\":{\"username\":\"alice\",\"age\":9223372036854775807,\"is_active\":true}}"
+  },
+  {
+    "payload": {
+      "username": "alice",
+      "age": 3.14159,
+      "is_active": true
+    },
+    "is_malformed_json": false,
+    "status_code": 200,
+    "ttfb": 0.11378909996710718,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"status\":\"success\",\"message\":\"User validation succeeded\",\"received\":{\"username\":\"alice\",\"age\":3.14159,\"is_active\":true}}"
+  },
+  {
+    "payload": {
+      "username": "alice",
+      "age": 30,
+      "is_active": []
+    },
+    "is_malformed_json": false,
+    "status_code": 422,
+    "ttfb": 0.11052419996121898,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"error\":\"Unprocessable Entity\",\"details\":\"is_active must be a boolean\"}"
+  },
+  {
+    "payload": {
+      "username": "alice",
+      "age": 30,
+      "is_active": 12345
+    },
+    "is_malformed_json": false,
+    "status_code": 422,
+    "ttfb": 0.11249269999098033,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"error\":\"Unprocessable Entity\",\"details\":\"is_active must be a boolean\"}"
+  },
+  {
+    "payload": {
+      "username": "alice",
+      "age": 1e-17,
+      "is_active": true
+    },
+    "is_malformed_json": false,
+    "status_code": 200,
+    "ttfb": 0.11431789997732267,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"status\":\"success\",\"message\":\"User validation succeeded\",\"received\":{\"username\":\"alice\",\"age\":1e-17,\"is_active\":true}}"
+  },
+  {
+    "payload": {
+      "username": "alice",
+      "age": 30,
+      "is_active": {}
+    },
+    "is_malformed_json": false,
+    "status_code": 422,
+    "ttfb": 0.11107899999478832,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"error\":\"Unprocessable Entity\",\"details\":\"is_active must be a boolean\"}"
+  },
+  {
+    "payload": {
+      "username": "alice",
+      "age": 1.7976931348623157e+308,
+      "is_active": true
+    },
+    "is_malformed_json": false,
+    "status_code": 500,
+    "ttfb": 0.1148795000044629,
+    "timeout": false,
+    "error": null,
+    "response_body": "Internal Server Error"
+  },
+  {
+    "payload": {
+      "username": "alice",
+      "age": 30,
+      "is_active": null
+    },
+    "is_malformed_json": false,
+    "status_code": 200,
+    "ttfb": 0.12574909999966621,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"status\":\"success\",\"message\":\"User validation succeeded\",\"received\":{\"username\":\"alice\",\"age\":30,\"is_active\":null}}"
+  },
+  {
+    "payload": {
+      "username": "alice",
+      "age": 30,
+      "is_active": "string_type_swap"
+    },
+    "is_malformed_json": false,
+    "status_code": 422,
+    "ttfb": 0.12767479999456555,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"error\":\"Unprocessable Entity\",\"details\":\"is_active must be a boolean\"}"
+  },
+  {
+    "payload": {
+      "username": "alice",
+      "age": 30,
+      "is_active": "false"
+    },
+    "is_malformed_json": false,
+    "status_code": 422,
+    "ttfb": 0.12368409999180585,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"error\":\"Unprocessable Entity\",\"details\":\"is_active must be a boolean\"}"
+  },
+  {
+    "payload": {
+      "username": "alice",
+      "age": 30,
+      "is_active": 1
+    },
+    "is_malformed_json": false,
+    "status_code": 422,
+    "ttfb": 0.1234287999686785,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"error\":\"Unprocessable Entity\",\"details\":\"is_active must be a boolean\"}"
+  },
+  {
+    "payload": {
+      "username": "alice",
+      "age": 30,
+      "is_active": "true"
+    },
+    "is_malformed_json": false,
+    "status_code": 422,
+    "ttfb": 0.12526619998971,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"error\":\"Unprocessable Entity\",\"details\":\"is_active must be a boolean\"}"
+  },
+  {
+    "payload": {
+      "username": "alice",
+      "age": 30,
+      "is_active": 0
+    },
+    "is_malformed_json": false,
+    "status_code": 422,
+    "ttfb": 0.12360039999475703,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"error\":\"Unprocessable Entity\",\"details\":\"is_active must be a boolean\"}"
+  },
+  {
+    "payload": {
+      "username": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "age": 30,
+      "is_active": true
+    },
+    "is_malformed_json": false,
+    "status_code": 500,
+    "ttfb": 0.14962489996105433,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"detail\":\"Internal Database Error: string value too long for database buffer.\"}"
+  },
+  {
+    "payload": {
+      "username": 12345,
+      "age": "string_type_swap",
+      "is_active": "string_type_swap"
+    },
+    "is_malformed_json": false,
+    "status_code": 422,
+    "ttfb": 0.1290510999970138,
+    "timeout": false,
+    "error": null,
+    "response_body": "{\"error\":\"Unprocessable Entity\",\"details\":\"username must be a string\"}"
+  },
+  {
+    "payload": {
+      "username": "alice",
+      "age": -1,
+      "is_active": true
+    },
+    "is_malformed_json": false,
+    "status_code": null,
+    "ttfb": 5.060333499975968,
+    "timeout": true,
+    "error": "Read Timeout: ",
+    "response_body": null
+  },
+  {
+    "payload": {
+      "username": "alice",
+      "age": -2147483648,
+      "is_active": true
+    },
+    "is_malformed_json": false,
+    "status_code": null,
+    "ttfb": 5.060009500011802,
+    "timeout": true,
+    "error": "Read Timeout: ",
+    "response_body": null
+  },
+  {
+    "payload": {
+      "username": "alice",
+      "age": -9223372036854775808,
+      "is_active": true
+    },
+    "is_malformed_json": false,
+    "status_code": null,
+    "ttfb": 5.059447700041346,
+    "timeout": true,
+    "error": "Read Timeout: ",
+    "response_body": null
+  },
+  {
+    "payload": {
+      "username": "alice",
+      "age": -1.7976931348623157e+308,
+      "is_active": true
+    },
+    "is_malformed_json": false,
+    "status_code": null,
+    "ttfb": 5.058862200006843,
+    "timeout": true,
+    "error": "Read Timeout: ",
+    "response_body": null
+  }
+]
