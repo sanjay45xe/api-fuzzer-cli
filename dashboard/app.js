@@ -416,12 +416,12 @@ document.addEventListener("DOMContentLoaded", () => {
     return resultLines.join("\n");
   }
 
-  function openDiffDrawer(record) {
+function openDiffDrawer(record) {
     diffMetaMethod.textContent = record.method;
     diffMetaEndpoint.textContent = record.endpoint;
     diffMetaStrategy.textContent = record.strategy;
     diffMetaCode.textContent = record.code;
-    
+
     // Dynamic badges class
     let badgeClass = "px-2 py-0.5 rounded text-[10px] font-bold border ";
     if (record.code === 200) badgeClass += "text-green-500 bg-green-500/10 border-green-500/20";
@@ -430,21 +430,17 @@ document.addEventListener("DOMContentLoaded", () => {
     else badgeClass += "text-red-500 bg-red-500/10 border-red-500/20";
     diffMetaCode.className = badgeClass;
 
-    // Render baseline
+    // Render baseline & highlight diffs
     diffBaselineJson.innerHTML = JSON.stringify(lastSuccessfulPayload, null, 2);
-    
-    // Highlight differences in the fuzzed payload
     diffFuzzedJson.innerHTML = highlightDiff(lastSuccessfulPayload, record.payload);
 
-    // Slide panel in (Hardware-accelerated class swap)
-    payloadDiffPanel.classList.add("drawer-open");
+    // Slide panel in
     document.getElementById("payload-diff-panel").classList.add("drawer-open");
-  }
+}
 
-  function closeDiffDrawer() {
-    payloadDiffPanel.classList.remove("drawer-open");
+function closeDiffDrawer() {
     document.getElementById("payload-diff-panel").classList.remove("drawer-open");
-  }
+}
 
   btnCloseDiff.addEventListener("click", closeDiffDrawer);
   btnCloseDiffBottom.addEventListener("click", closeDiffDrawer);

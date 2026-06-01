@@ -141,21 +141,24 @@ input[type="range"]::-webkit-slider-thumb {
 
 /* Slide Drawer Styles (Hardware Accelerated) */
 /* Slide Drawer Styles */
+/* --- Drawer Overlay System --- */
 #payload-diff-panel {
   position: fixed;
   top: 0;
-  right: -500px; /* Start hidden off-screen */
-  width: 500px;  /* Fixed width */
+  right: -550px; /* Hidden off-screen */
+  width: 550px;
   height: 100%;
   z-index: 1000;
-  transition: right 0.3s ease-in-out; /* Smooth slide animation */
-  background: var(--color-bg-base);
-  border-left: 1px solid #18181b; /* Border for visibility */
+  background: #070709;
+  border-left: 1px solid #18181b;
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+  transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  visibility: hidden; /* Prevent interaction when closed */
 }
 
-/* This is the class your JavaScript will add */
 .drawer-open {
   right: 0 !important;
+  visibility: visible !important; /* Enable interaction when open */
 }
 
 /* Modal Scale Animation */
