@@ -1,17 +1,50 @@
 import asyncio
 import time
 import json
+import csv
+import os
+import datetime
 import httpx
 from typing import Any, List, Tuple, Callable, Optional, Dict
 from fuzzer.config import FuzzerConfig
 from fuzzer.logger import FuzzResult
 
 class FuzzEngine:
-    def __init__(self, config: FuzzerConfig, on_request_complete: Optional[Callable[[FuzzResult], None]] = None):
+    def __init__(self, config: FuzzerConfig, on_request_complete: Optional[Callable[[FuzzResult], None]] = None, csv_path: str = "fuzz_results.csv"):
         self.config = config
         self.on_request_complete = on_request_complete
         self.semaphore = asyncio.Semaphore(config.concurrency)
         self.results: List[FuzzResult] = []
+        self.csv_path = csv_path
+        self.csv_lock = asyncio.Lock()
+        
+        # Initialize the CSV file with headers
+        self._init_csv()
+
+    def _init_csv(self):
+        try:
+            with open(self.csv_path, mode="w", newline="", encoding="utf-8") as f:
+                writer = csv.writer(f)
+                writer.writerow(["timestamp", "status_code", "ttfb_ms", "timeout", "error", "payload"])
+        except Exception as e:
+            print(f"Error initializing CSV log file {self.csv_path}: {e}")
+
+    async def _log_to_csv(self, result: FuzzResult):
+        async with self.csv_lock:
+            try:
+                # Append single completed request details to CSV
+                with open(self.csv_path, mode="a", newline="", encoding="utf-8") as f:
+                    writer = csv.writer(f)
+                    writer.writerow([
+                        datetime.datetime.now().isoformat(),
+                        result.status_code if result.status_code is not None else "",
+                        f"{result.ttfb * 1000:.2f}" if result.ttfb is not None else "",
+                        result.timeout,
+                        result.error if result.error is not None else "",
+                        json.dumps(result.payload) if not result.is_malformed_json else result.payload
+                    ])
+            except Exception as e:
+                print(f"Error writing request metrics to CSV: {e}")
 
     async def _send_request(self, client: httpx.AsyncClient, payload: Any, is_malformed_json: bool) -> FuzzResult:
         headers = self.config.headers.copy()
@@ -48,9 +81,7 @@ class FuzzEngine:
         async with self.semaphore:
             try:
                 # Custom request handling
-                # To capture TTFB: we can read headers before reading body, or measure simple elapsed
-                # time for the response headers to arrive (which is standard client.send or client.stream).
-                # Using client.stream is the most accurate way to get Time To First Byte (TTFB).
+                # To capture TTFB: stream using client.stream to measure Time To First Byte (TTFB) accurately
                 async with client.stream(
                     method=self.config.method,
                     url=self.config.url,
@@ -93,6 +124,9 @@ class FuzzEngine:
         )
 
         self.results.append(result)
+
+        # Log result locally to CSV
+        await self._log_to_csv(result)
 
         if self.on_request_complete:
             # Invoke callback (handles real-time UI/logging updates)

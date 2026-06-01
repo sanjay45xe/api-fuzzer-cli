@@ -95,7 +95,8 @@ def run(
         session_logger.log_result(result)
 
     # 5. Run async engine
-    engine = FuzzEngine(config, on_request_complete=on_request_complete)
+    csv_path = config.output.rsplit(".", 1)[0] + ".csv" if "." in config.output else config.output + ".csv"
+    engine = FuzzEngine(config, on_request_complete=on_request_complete, csv_path=csv_path)
     
     console.print("\n[bold yellow]Spawning asynchronous execution engine...[/bold yellow]\n")
     
@@ -133,8 +134,9 @@ def run(
         f"Client Errors (4xx): [yellow]{dashboard.count_4xx}[/yellow]\n"
         f"Server Errors (5xx): [red]{dashboard.count_5xx}[/red]\n"
         f"Timeouts / Failures: [bold magenta]{dashboard.count_timeouts + dashboard.count_errors}[/bold magenta]\n\n"
-        f"Avg Latency: [bold]{lats['avg']*1000:.1f} ms[/bold] | 95th Percentile: [bold]{lats['p95']*1000:.1f} ms[/bold]\n"
-        f"Fuzz results saved to: [cyan]{config.output}[/cyan]"
+        f"Avg Latency: [bold]{lats['avg']*1000:.1f} ms[/bold] | 95th Percentile: [bold]{lats['p95']*1000:.1f} ms[/bold]\n\n"
+        f"JSON results saved to: [cyan]{config.output}[/cyan]\n"
+        f"CSV metrics saved to: [cyan]{csv_path}[/cyan]"
     )
     
     summary_color = "red" if failures > 0 else "green"
