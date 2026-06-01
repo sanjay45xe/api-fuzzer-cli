@@ -438,10 +438,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Slide panel in (Hardware-accelerated class swap)
     payloadDiffPanel.classList.add("drawer-open");
+    document.getElementById("payload-diff-panel").classList.add("drawer-open");
   }
 
   function closeDiffDrawer() {
     payloadDiffPanel.classList.remove("drawer-open");
+    document.getElementById("payload-diff-panel").classList.remove("drawer-open");
   }
 
   btnCloseDiff.addEventListener("click", closeDiffDrawer);
