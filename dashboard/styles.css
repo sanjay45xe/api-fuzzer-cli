@@ -24,11 +24,12 @@ h1, h2, h3, h4, h5, h6 {
 /* Glassmorphism / Sleek Panels */
 .glass-panel {
   background: var(--color-bg-panel);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(245, 158, 11, 0.08);
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s ease;
+  will-change: transform, border-color, box-shadow;
 }
 
 .glass-panel:hover {
@@ -136,4 +137,59 @@ input[type="range"]::-webkit-slider-thumb {
   background: linear-gradient(135deg, #f3f4f6 0%, #f59e0b 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+/* Slide Drawer Styles (Hardware Accelerated) */
+#payload-diff-panel {
+  will-change: transform;
+  transform: translateZ(0);
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.6);
+}
+
+.drawer-open {
+  transform: translateX(0) !important;
+}
+
+/* Modal Scale Animation */
+#report-summary-modal {
+  will-change: opacity;
+  transition: opacity 0.2s ease-out;
+}
+
+#report-summary-modal.modal-show {
+  opacity: 1 !important;
+}
+
+#report-summary-modal.modal-show > div {
+  transform: scale(1) !important;
+}
+
+/* Hardware accelerated ChartJS wrapper */
+#latency-chart {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Fade In animation */
+.animate-fade-in {
+  animation: fadeIn 0.15s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Log row clicks visual effects */
+#logs-table-body tr {
+  cursor: pointer;
+  transition: background-color 0.1s ease;
+}
+
+#logs-table-body tr:hover {
+  background-color: rgba(245, 158, 11, 0.03) !important;
+}
+
+#logs-table-body tr:active {
+  background-color: rgba(245, 158, 11, 0.06) !important;
 }

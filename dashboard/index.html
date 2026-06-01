@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>API Fuzzer SaaS Dashboard</title>
+  <title>API Fuzzer Security Research Platform</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -46,8 +46,10 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- PapaParse for high-performance CSV handling -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 </head>
-<body class="bg-zinc-950 text-gray-200 antialiased font-body relative min-h-screen flex">
+<body class="bg-zinc-950 text-gray-200 antialiased font-body relative min-h-screen flex overflow-x-hidden">
 
   <!-- Background Decorative Glowing Lights (matching image aesthetic) -->
   <div class="radial-glow-top"></div>
@@ -88,7 +90,7 @@
     <div class="p-6 border-t border-zinc-900">
       <div class="flex items-center justify-between">
         <div class="flex items-center space-x-3">
-          <div class="w-10 h-10 rounded-full border border-zinc-800 bg-zinc-900 flex items-center justify-center font-bold text-amber-500">
+          <div class="w-10 h-10 rounded-full border border-zinc-800 bg-zinc-900 flex items-center justify-center font-bold text-amber-500 font-title">
             S
           </div>
           <div>
@@ -119,7 +121,14 @@
       
       <!-- Right Side Header Utility -->
       <div class="flex items-center space-x-4">
-        <!-- Quick Stats badge -->
+        <!-- Interactive Report Summary Trigger -->
+        <button id="btn-report-summary" class="h-8 px-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs font-bold text-amber-500 hover:bg-amber-500/20 transition-all flex items-center space-x-1.5 shadow-lg shadow-amber-500/5">
+          <i data-lucide="file-bar-chart-2" class="w-3.5 h-3.5"></i>
+          <span>Report Summary</span>
+        </button>
+
+        <div class="h-4 w-px bg-zinc-800"></div>
+
         <span class="text-xs font-mono font-semibold px-2.5 py-1 bg-zinc-900 rounded-lg border border-zinc-800 text-zinc-400">
           concurrency_max: 500
         </span>
@@ -175,7 +184,7 @@
                   
                   <div class="space-y-2 col-span-2">
                     <label class="text-xs font-semibold text-zinc-400">JSON template payload</label>
-                    <select id="payload-template" class="w-full px-3 py-3 rounded-xl bg-zinc-900/60 border border-zinc-800 text-xs focus:outline-none focus:border-amber-500/50 text-gray-300">
+                    <select id="payload-template" class="w-full px-3 py-3 rounded-xl bg-zinc-900/60 border border-zinc-800 text-xs focus:outline-none focus:border-amber-500/50 text-gray-300 font-medium">
                       <option value="users">User Profile Schema</option>
                       <option value="payments">Payment Transaction</option>
                       <option value="inventory">Product Inventory Item</option>
@@ -207,7 +216,12 @@
               </button>
             </div>
           </div>
-
+<div class="mt-4 mb-2">
+  <select id="logFilter" onchange="filterLogs()" class="bg-zinc-900 text-zinc-300 border border-zinc-700 px-3 py-1 rounded-md text-sm">
+    <option value="all">Show All Logs</option>
+    <option value="interesting">Interesting Only (403, 429, 500)</option>
+  </select>
+</div>
           <!-- Real-time Stats Grid & System Info (Right Side) -->
           <div class="lg:col-span-8 flex flex-col space-y-6">
             
@@ -303,7 +317,7 @@
               <!-- Line Chart Container -->
               <div class="h-64 relative flex items-center justify-center w-full">
                 <!-- If fuzzer is idle, show a premium overlay -->
-                <div id="chart-overlay" class="absolute inset-0 bg-zinc-950/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center rounded-2xl border border-zinc-900/60 p-6 text-center transition-all duration-300">
+                <div id="chart-overlay" class="absolute inset-0 bg-zinc-950/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center rounded-2xl border border-zinc-900/60 p-6 text-center transition-all duration-300 animate-fade-in">
                   <div class="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-3">
                     <i data-lucide="play" class="w-5 h-5 text-amber-500 animate-pulse"></i>
                   </div>
@@ -327,12 +341,29 @@
               </div>
               <div>
                 <h2 class="text-sm font-bold font-title tracking-wide uppercase text-zinc-400">Live Payload Activity Log</h2>
-                <p class="text-[10px] text-zinc-500 font-semibold tracking-wide">Fuzzed request anomalies stream</p>
+                <p class="text-[10px] text-zinc-500 font-semibold tracking-wide">Fuzzed request anomalies stream (Click row for payload diff audit)</p>
               </div>
             </div>
             
-            <!-- Quick filters -->
-            <div class="flex items-center space-x-3">
+            <!-- Quick filters & Data Intelligence + Export Tools -->
+            <div class="flex items-center space-x-3 z-20">
+              <!-- Dropdown filter -->
+              <div class="flex items-center space-x-2">
+                <label class="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Filter:</label>
+                <select id="filter-log-type" class="text-xs font-semibold px-3 py-1.5 rounded-lg border border-zinc-800 bg-zinc-900 focus:outline-none focus:border-amber-500/50 text-zinc-300">
+                  <option value="all">All Logs</option>
+                  <option value="interesting">Interesting Logs (403, 429, 500, 408)</option>
+                </select>
+              </div>
+
+              <!-- Export CSV Button -->
+              <button id="btn-export-csv" class="text-xs font-semibold px-3 py-1.5 rounded-lg border border-amber-500/20 hover:border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 transition-colors flex items-center space-x-1.5 shadow-lg shadow-amber-500/5">
+                <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                <span>Export CSV</span>
+              </button>
+
+              <div class="w-px h-4 bg-zinc-850"></div>
+
               <button id="btn-clear-logs" class="text-xs font-semibold px-3 py-1.5 rounded-lg border border-zinc-800 hover:border-zinc-700 bg-zinc-900/30 text-zinc-500 hover:text-gray-300 transition-colors flex items-center space-x-1.5">
                 <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                 <span>Clear</span>
@@ -341,7 +372,7 @@
           </div>
 
           <!-- Responsive Table Layout -->
-          <div class="overflow-x-auto border border-zinc-900 rounded-2xl">
+          <div class="overflow-x-auto border border-zinc-900 rounded-2xl relative">
             <table class="w-full text-left border-collapse">
               <thead>
                 <tr class="border-b border-zinc-900 bg-zinc-900/20 text-zinc-500 text-xs font-semibold font-title uppercase tracking-wider">
@@ -352,7 +383,7 @@
                   <th class="px-6 py-4">Fuzzed Payload ID / Strategy</th>
                 </tr>
               </thead>
-              <tbody id="logs-table-body" class="divide-y divide-zinc-900 text-xs font-mono">
+              <tbody id="logs-table-body" class="divide-y divide-zinc-900 text-xs font-mono select-none">
                 <!-- Fallback empty state -->
                 <tr id="table-empty-row">
                   <td colspan="5" class="px-6 py-12 text-center text-zinc-600 font-sans font-medium">
@@ -469,6 +500,151 @@
 
     </div>
   </main>
+
+  <!-- Interactive Payload Diffing Side-Panel (Slide-out Drawer) -->
+  <div id="payload-diff-panel" class="fixed right-0 top-0 bottom-0 w-[550px] z-50 bg-zinc-950/95 border-l border-zinc-900 shadow-2xl p-6 flex flex-col justify-between transform translate-x-full transition-transform duration-300 ease-in-out backdrop-blur-md">
+    <div class="space-y-6 flex-1 overflow-y-auto pr-1">
+      <!-- Header -->
+      <div class="flex justify-between items-center pb-4 border-b border-zinc-900">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-7 h-7 rounded bg-amber-500/10 flex items-center justify-center text-amber-500">
+            <i data-lucide="git-diff" class="w-4 h-4"></i>
+          </div>
+          <h3 class="text-sm font-bold font-title text-gray-200">Fuzzed Payload Audit & Diff</h3>
+        </div>
+        <button id="btn-close-diff" class="w-7 h-7 rounded-lg bg-zinc-900 border border-zinc-850 flex items-center justify-center hover:border-zinc-700 transition-colors text-zinc-500 hover:text-zinc-200">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Selected Request Meta Info -->
+      <div class="p-4 rounded-xl bg-zinc-900/40 border border-zinc-850 flex justify-between items-center text-xs">
+        <div class="space-y-1">
+          <div class="flex items-center space-x-2">
+            <span id="diff-meta-method" class="font-bold text-amber-500">POST</span>
+            <span id="diff-meta-endpoint" class="font-mono text-zinc-400">/api/users</span>
+          </div>
+          <p id="diff-meta-strategy" class="text-zinc-500 font-semibold font-sans">Type swap strategy: username -> integer</p>
+        </div>
+        <div>
+          <span id="diff-meta-code" class="px-2 py-0.5 rounded text-[10px] font-bold text-red-500 bg-red-500/10 border border-red-500/20">500</span>
+        </div>
+      </div>
+
+      <!-- Diff JSON Viewer View -->
+      <div class="space-y-3">
+        <div class="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+          <span>Last Successful Baseline (200 OK)</span>
+          <span>Selected Fuzzed Payload</span>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-4 h-[350px]">
+          <!-- Baseline Payload (Left) -->
+          <div class="rounded-xl border border-green-500/10 bg-green-500/[0.02] p-4 font-mono text-[10px] overflow-y-auto text-green-400 select-all border-dashed whitespace-pre-wrap" id="diff-baseline-json">
+            {
+              "username": "alice",
+              "age": 30,
+              "is_active": true
+            }
+          </div>
+          <!-- Selected Fuzzed Payload (Right) -->
+          <div class="rounded-xl border border-red-500/10 bg-red-500/[0.02] p-4 font-mono text-[10px] overflow-y-auto text-red-400 select-all border-dashed whitespace-pre-wrap animate-fade-in" id="diff-fuzzed-json">
+            {
+              "username": [],
+              "age": 30,
+              "is_active": true
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Explanatory Analysis Tip -->
+      <div class="p-4 rounded-xl bg-amber-500/[0.02] border border-amber-500/10 text-[10px] leading-relaxed text-zinc-500 flex items-start space-x-2">
+        <i data-lucide="info" class="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5"></i>
+        <span>Diff analysis automatically parses both JSON trees and highlights modifications. Red-highlighted values in the fuzzed payload represent fuzzed types or boundary structures designed to evaluate backend schema resilience.</span>
+      </div>
+    </div>
+    
+    <div class="pt-4 border-t border-zinc-900 flex justify-end">
+      <button id="btn-close-diff-bottom" class="px-4 py-2.5 rounded-xl border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 text-xs font-bold transition-colors">
+        Dismiss Audit
+      </button>
+    </div>
+  </div>
+
+  <!-- Interactive Report Summary Modal Overlay -->
+  <div id="report-summary-modal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+    <div class="w-[500px] glass-panel p-6 rounded-3xl space-y-6 relative border-amber-500/20 transform scale-95 transition-transform duration-300">
+      
+      <!-- Close trigger -->
+      <button id="btn-close-report" class="w-7 h-7 rounded-lg bg-zinc-900 border border-zinc-850 flex items-center justify-center hover:border-zinc-700 transition-colors text-zinc-500 hover:text-zinc-200 absolute right-6 top-6">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+
+      <!-- Header -->
+      <div class="flex items-center space-x-2.5">
+        <div class="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500">
+          <i data-lucide="file-bar-chart" class="w-4.5 h-4.5"></i>
+        </div>
+        <div>
+          <h3 class="text-sm font-bold font-title text-gray-200 uppercase tracking-wide">Fuzz Session Scan Report</h3>
+          <p class="text-[10px] text-zinc-500 font-semibold tracking-wide">Security & parser robustness scan analytics</p>
+        </div>
+      </div>
+
+      <!-- Primary Metrics Grid -->
+      <div class="grid grid-cols-3 gap-3">
+        <div class="p-3 bg-zinc-900/40 border border-zinc-850 rounded-xl text-center space-y-0.5">
+          <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Total Dispatched</p>
+          <p id="report-total-reqs" class="text-lg font-bold font-title font-mono text-gray-100">0</p>
+        </div>
+        <div class="p-3 bg-zinc-900/40 border border-zinc-850 rounded-xl text-center space-y-0.5">
+          <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Success Rate</p>
+          <p id="report-success-rate" class="text-lg font-bold font-title font-mono text-green-400">0%</p>
+        </div>
+        <div class="p-3 bg-zinc-900/40 border border-zinc-850 rounded-xl text-center space-y-0.5">
+          <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Vulnerabilities</p>
+          <p id="report-vuln-count" class="text-lg font-bold font-title font-mono text-red-500">0</p>
+        </div>
+      </div>
+
+      <!-- Structured Scan Findings Categories -->
+      <div class="space-y-2">
+        <h4 class="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Scan Findings Categories</h4>
+        <div class="space-y-1.5 max-h-48 overflow-y-auto pr-1 text-xs">
+          <!-- Item 1 -->
+          <div class="p-3 rounded-lg border border-zinc-900 bg-zinc-900/10 flex justify-between items-center">
+            <span class="text-zinc-400">Malformed JSON Syntax Checks</span>
+            <span id="report-cat-malformed" class="font-mono text-zinc-500 font-bold bg-zinc-900 px-2 py-0.5 rounded">0</span>
+          </div>
+          <!-- Item 2 -->
+          <div class="p-3 rounded-lg border border-zinc-900 bg-zinc-900/10 flex justify-between items-center">
+            <span class="text-zinc-400">Invalid Schema Type Violations</span>
+            <span id="report-cat-types" class="font-mono text-zinc-500 font-bold bg-zinc-900 px-2 py-0.5 rounded">0</span>
+          </div>
+          <!-- Item 3 -->
+          <div class="p-3 rounded-lg border border-zinc-900 bg-zinc-900/10 flex justify-between items-center">
+            <span class="text-zinc-400">Database Buffer & Overflow Crashes</span>
+            <span id="report-cat-overflow" class="font-mono text-zinc-500 font-bold bg-zinc-900 px-2 py-0.5 rounded">0</span>
+          </div>
+          <!-- Item 4 -->
+          <div class="p-3 rounded-lg border border-zinc-900 bg-zinc-900/10 flex justify-between items-center">
+            <span class="text-zinc-400">Server Latency Exhaustion (Timeouts)</span>
+            <span id="report-cat-timeouts" class="font-mono text-zinc-500 font-bold bg-zinc-900 px-2 py-0.5 rounded">0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action -->
+      <div class="pt-4 border-t border-zinc-900 flex justify-end space-x-3">
+        <button id="btn-report-download" class="px-4 py-2 rounded-xl border border-amber-500/20 hover:border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 text-xs font-bold transition-all flex items-center space-x-1.5 shadow-lg shadow-amber-500/5">
+          <i data-lucide="download" class="w-3.5 h-3.5"></i>
+          <span>Save Local Report</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
 
   <!-- Interactive script -->
   <script src="app.js"></script>
