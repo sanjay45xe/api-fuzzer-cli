@@ -1,584 +1,313 @@
-document.addEventListener("DOMContentLoaded", () => {
-  
-  // 1. Navigation Controller
-  const navDashboard = document.getElementById("nav-dashboard");
-  const navHistory = document.getElementById("nav-history");
-  const navSettings = document.getElementById("nav-settings");
-  
-  const pageDashboard = document.getElementById("page-dashboard");
-  const pageHistory = document.getElementById("page-history");
-  const pageSettings = document.getElementById("page-settings");
-  
-  const pageTitle = document.getElementById("page-title");
-  
-  function switchPage(activeLink, activePage, title) {
-    // Reset pages
-    pageDashboard.classList.add("hidden");
-    pageHistory.classList.add("hidden");
-    pageSettings.classList.add("hidden");
-    
-    // Reset nav links styling
-    [navDashboard, navHistory, navSettings].forEach(link => {
-      link.className = "flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 text-zinc-400 hover:text-gray-200 hover:bg-zinc-900/50 border border-transparent";
-    });
-    
-    // Set active page
-    activePage.classList.remove("hidden");
-    activeLink.className = "flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 bg-amber-500/10 text-amber-500 border border-amber-500/20 shadow-lg shadow-amber-500/5";
-    pageTitle.textContent = title;
-  }
-  
-  navDashboard.addEventListener("click", (e) => {
-    e.preventDefault();
-    switchPage(navDashboard, pageDashboard, "API Fuzzing Dashboard");
+(function(){
+"use strict";
+
+// ── helpers ──
+function g(id){return document.getElementById(id);}
+function txt(id,v){var e=g(id);if(e)e.textContent=v;}
+function htm(id,v){var e=g(id);if(e)e.innerHTML=v;}
+function wd(id,p){var e=g(id);if(e)e.style.width=p+"%";}
+
+// ── nav ──
+var NAV_PAGES=["dashboard","cmdcentre","history","settings"];
+var TITLES={dashboard:"API Fuzzing Dashboard",cmdcentre:"Command Centre",history:"Fuzzing Test History",settings:"Engine Config"};
+function showPage(key){
+  NAV_PAGES.forEach(function(p){
+    var pg=g("page-"+p); if(pg){pg.classList.remove("active");}
+    var lk=g("nav-"+p);  if(lk){lk.className="nav-link"+(p===key?(key==="cmdcentre"?" active-purple":" active-amber"):"");}
   });
-  
-  navHistory.addEventListener("click", (e) => {
-    e.preventDefault();
-    switchPage(navHistory, pageHistory, "Fuzzing Test History");
-  });
-  
-  navSettings.addEventListener("click", (e) => {
-    e.preventDefault();
-    switchPage(navSettings, pageSettings, "Engine Config");
-  });
-
-  // Concurrency slider dynamic indicator
-  const concurrencySlider = document.getElementById("concurrency-slider");
-  const concurrencyDisplay = document.getElementById("concurrency-display");
-  
-  concurrencySlider.addEventListener("input", (e) => {
-    concurrencyDisplay.textContent = `${e.target.value} threads`;
-  });
-
-  // Simulated Fuzz Strategies list (matching Python results)
-  const fuzzStrategies = [
-    // Malformed JSON (400)
-    { strategy: "Malformed JSON: trailing comma", code: 400, latMin: 12, latMax: 25, cat: "malformed", payload: '{"username": "alice", "age": 30,}' },
-    { strategy: "Malformed JSON: missing brace", code: 400, latMin: 10, latMax: 18, cat: "malformed", payload: '{"username": "alice", "age": 30' },
-    { strategy: "Malformed JSON: missing separator", code: 400, latMin: 15, latMax: 22, cat: "malformed", payload: '{"username": "alice" "age": 30}' },
-    { strategy: "Malformed JSON: extra junk bytes", code: 400, latMin: 18, latMax: 30, cat: "malformed", payload: '{"username": "alice", "age": 30}extra_junk' },
-    
-    // Standard baseline success (200)
-    { strategy: "Baseline validation check", code: 200, latMin: 35, latMax: 50, cat: "success", payload: { username: "alice", age: 30, is_active: true } },
-    { strategy: "Empty elements fallback validation", code: 200, latMin: 32, latMax: 45, cat: "success", payload: {} },
-    
-    // Type Fuzzing mismatch (422)
-    { strategy: "Type swap: username -> integer", code: 422, latMin: 22, latMax: 40, cat: "types", payload: { username: 12345, age: 30, is_active: true } },
-    { strategy: "Type swap: age -> boolean", code: 422, latMin: 20, latMax: 38, cat: "types", payload: { username: "alice", age: true, is_active: true } },
-    { strategy: "Type swap: age -> list", code: 422, latMin: 25, latMax: 42, cat: "types", payload: { username: "alice", age: [], is_active: true } },
-    { strategy: "Type swap: is_active -> string", code: 422, latMin: 21, latMax: 35, cat: "types", payload: { username: "alice", age: 30, is_active: "string_type_swap" } },
-    
-    // Boundary and internal overflows (500)
-    { strategy: "Boundary overflow: username (>5000 chars)", code: 500, latMin: 90, latMax: 140, cat: "overflow", msg: "Internal Database Column Overflow", payload: { username: "A" * 6000, age: 30, is_active: true } },
-    { strategy: "Arithmetic overflow: age (1.79e308)", code: 500, latMin: 85, latMax: 130, cat: "overflow", msg: "Arithmetic Error: Float limit exceeded", payload: { username: "alice", age: 1.79e308, is_active: true } },
-    { strategy: "Directory traversal threat: ../../passwd", code: 500, latMin: 110, latMax: 180, cat: "overflow", msg: "Security Filter Failure Exception", payload: { username: "../../etc/passwd", age: 30, is_active: true } },
-    
-    // Latency exhaustion/timeouts (408)
-    { strategy: "Boundary timeout check: age (-1)", code: 408, latMin: 5000, latMax: 5000, cat: "timeouts", msg: "Read Timeout Exceeded (5.0s limit)", payload: { username: "alice", age: -1, is_active: true } },
-    { strategy: "Boundary timeout check: age (-2147483648)", code: 408, latMin: 5000, latMax: 5000, cat: "timeouts", msg: "Read Timeout Exceeded (5.0s limit)", payload: { username: "alice", age: -2147483648, is_active: true } }
-  ];
-
-  // In-memory persistent database of current session requests (for filtering/diffing/exporting)
-  let fuzzedRequests = [];
-  let lastSuccessfulPayload = { username: "alice", age: 30, is_active: true }; // Default baseline
-
-  // State variables
-  let isFuzzing = false;
-  let timerId = null;
-  let totalReqs = 0;
-  let failedReqs = 0;
-  let latencies = [];
-  let reqsPerSec = 0;
-  const maxSimulatedReqs = 52;
-
-  // DOM Elements
-  const btnStart = document.getElementById("btn-start");
-  const headerStatusText = document.getElementById("header-status-text");
-  const headerStatusDot = document.getElementById("header-status-dot");
-  
-  const statTotal = document.getElementById("stat-total");
-  const statRate = document.getElementById("stat-rate");
-  const statFailed = document.getElementById("stat-failed");
-  const statFailPct = document.getElementById("stat-fail-pct");
-  const statLatency = document.getElementById("stat-latency");
-  const statLatencyP95 = document.getElementById("stat-latency-p95");
-  const statStatus = document.getElementById("stat-status");
-  const statProgressBar = document.getElementById("stat-progress-bar");
-  
-  const targetUrlInput = document.getElementById("target-url");
-  const requestMethodSelect = document.getElementById("request-method");
-  const chartOverlay = document.getElementById("chart-overlay");
-  
-  const logsTableBody = document.getElementById("logs-table-body");
-  const tableEmptyRow = document.getElementById("table-empty-row");
-  const btnClearLogs = document.getElementById("btn-clear-logs");
-  
-  // Data Intelligence, Summary, Export DOM triggers
-  const filterLogType = document.getElementById("filter-log-type");
-  const btnExportCsv = document.getElementById("btn-export-csv");
-  
-  const btnReportSummary = document.getElementById("btn-report-summary");
-  const reportSummaryModal = document.getElementById("report-summary-modal");
-  const btnCloseReport = document.getElementById("btn-close-report");
-  const btnReportDownload = document.getElementById("btn-report-download");
-  
-  const reportTotalReqs = document.getElementById("report-total-reqs");
-  const reportSuccessRate = document.getElementById("report-success-rate");
-  const reportVulnCount = document.getElementById("report-vuln-count");
-  
-  const reportCatMalformed = document.getElementById("report-cat-malformed");
-  const reportCatTypes = document.getElementById("report-cat-types");
-  const reportCatOverflow = document.getElementById("report-cat-overflow");
-  const reportCatTimeouts = document.getElementById("report-cat-timeouts");
-
-  // Diff Panel DOM Elements
-  const payloadDiffPanel = document.getElementById("payload-diff-panel");
-  const btnCloseDiff = document.getElementById("btn-close-diff");
-  const btnCloseDiffBottom = document.getElementById("btn-close-diff-bottom");
-  
-  const diffMetaMethod = document.getElementById("diff-meta-method");
-  const diffMetaEndpoint = document.getElementById("diff-meta-endpoint");
-  const diffMetaStrategy = document.getElementById("diff-meta-strategy");
-  const diffMetaCode = document.getElementById("diff-meta-code");
-  
-  const diffBaselineJson = document.getElementById("diff-baseline-json");
-  const diffFuzzedJson = document.getElementById("diff-fuzzed-json");
-
-  // Performance-Optimized Chart.js Configuration (Bypasses rendering bottlenecks)
-  const ctx = document.getElementById("latency-chart").getContext("2d");
-  const chartGradient = ctx.createLinearGradient(0, 0, 0, 250);
-  chartGradient.addColorStop(0, 'rgba(245, 158, 11, 0.2)');
-  chartGradient.addColorStop(1, 'rgba(245, 158, 11, 0)');
-
-  const latencyChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: [],
-      datasets: [{
-        data: [],
-        borderColor: '#f59e0b',
-        borderWidth: 1.5,
-        pointBackgroundColor: '#f59e0b',
-        pointBorderColor: '#070709',
-        pointRadius: 2,
-        pointHoverRadius: 5,
-        fill: true,
-        backgroundColor: chartGradient,
-        tension: 0.2, // Straighter tension curves speed up CPU calculations
-        spanGaps: true
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      animation: false,      // CRITICAL: Disables heavy animation redraw loops entirely
-      parsing: false,        // CRITICAL: Bypasses inner data structures parsing
-      normalized: true,      // CRITICAL: Assumes pre-sorted values on x-axis
-      plugins: {
-        legend: { display: false },
-        tooltip: { enabled: true }
-      },
-      hover: {
-        mode: 'nearest',
-        intersect: true
-      },
-      scales: {
-        x: {
-          grid: { display: false }, // Avoid grid calculation reflows
-          ticks: { color: '#4b5563', font: { size: 8, family: 'Plus Jakarta Sans' } }
-        },
-        y: {
-          grid: { color: 'rgba(245, 158, 11, 0.02)' },
-          ticks: { color: '#4b5563', font: { size: 8, family: 'Plus Jakarta Sans' } },
-          min: 0
-        }
-      }
-    }
-  });
-
-  // Toggles fuzzer active state
-  function startFuzzing() {
-    isFuzzing = true;
-    totalReqs = 0;
-    failedReqs = 0;
-    latencies = [];
-    reqsPerSec = 0;
-    fuzzedRequests = [];
-    
-    // UI state change
-    btnStart.innerHTML = `<i data-lucide="square" class="w-4 h-4 fill-zinc-950"></i><span>STOP FUZZING RUN</span>`;
-    btnStart.classList.replace("gold-gradient-bg", "bg-red-500");
-    btnStart.classList.replace("text-zinc-950", "text-white");
-    lucide.createIcons();
-
-    headerStatusText.textContent = "Engine Active";
-    headerStatusDot.className = "w-2 h-2 rounded-full status-dot-active";
-    statStatus.textContent = "ACTIVE";
-    statStatus.className = "text-3xl font-bold font-title tracking-tight text-amber-500 animate-pulse";
-
-    // Chart overlay transition
-    chartOverlay.classList.add("opacity-0", "pointer-events-none");
-
-    // Clear logs table
-    logsTableBody.innerHTML = "";
-    
-    // Clear chart points
-    latencyChart.data.labels = [];
-    latencyChart.data.datasets[0].data = [];
-    latencyChart.update('none'); // Update without redraw animations
-
-    // Start interval
-    const intervalMs = Math.max(50, Math.floor(2500 / concurrencySlider.value));
-    
-    timerId = setInterval(() => {
-      if (totalReqs >= maxSimulatedReqs) {
-        stopFuzzing(true);
-        return;
-      }
-      simulateSingleRequest();
-    }, intervalMs);
-  }
-
-  function simulateSingleRequest() {
-    totalReqs++;
-    
-    // Pick request using representative ratios
-    let strategy;
-    const rng = Math.random();
-    if (rng < 0.28) {
-      strategy = fuzzStrategies.filter(s => s.code === 200)[Math.floor(Math.random() * 2)];
-    } else if (rng < 0.78) {
-      strategy = fuzzStrategies.filter(s => [400, 422].includes(s.code))[Math.floor(Math.random() * 8)];
-    } else if (rng < 0.92) {
-      strategy = fuzzStrategies.filter(s => s.code === 500)[Math.floor(Math.random() * 3)];
-    } else {
-      strategy = fuzzStrategies.filter(s => s.code === 408)[Math.floor(Math.random() * 2)];
-    }
-
-    const latency = Math.floor(Math.random() * (strategy.latMax - strategy.latMin + 1)) + strategy.latMin;
-    latencies.push(latency);
-    
-    if (strategy.code >= 400) {
-      failedReqs++;
-    }
-
-    // Keep track of the latest successful payload to serve as baseline
-    if (strategy.code === 200 && Object.keys(strategy.payload).length > 0) {
-      lastSuccessfulPayload = strategy.payload;
-    }
-
-    // Save record persistently in memory
-    const requestRecord = {
-      id: `PAYLOAD_IDX_${totalReqs}`,
-      timestamp: new Date().toLocaleTimeString(),
-      endpoint: targetUrlInput.value,
-      method: requestMethodSelect.value,
-      code: strategy.code,
-      strategy: strategy.strategy,
-      category: strategy.cat,
-      latency: latency,
-      msg: strategy.msg || "",
-      payload: strategy.payload
-    };
-    fuzzedRequests.push(requestRecord);
-
-    // Update Stats Display
-    statTotal.textContent = totalReqs;
-    statFailed.textContent = failedReqs;
-    
-    const failPct = ((failedReqs / totalReqs) * 100).toFixed(1);
-    statFailPct.textContent = `${failPct}%`;
-    
-    reqsPerSec = Math.floor(Math.random() * 10) + Math.floor(concurrencySlider.value * 0.8);
-    statRate.textContent = `${reqsPerSec} req/s`;
-
-    const avgLatency = (latencies.reduce((a, b) => a + b, 0) / latencies.length).toFixed(1);
-    statLatency.textContent = `${avgLatency} ms`;
-
-    const sortedLats = [...latencies].sort((a, b) => a - b);
-    const p95Idx = Math.min(Math.ceil(sortedLats.length * 0.95) - 1, sortedLats.length - 1);
-    const p95Val = sortedLats[p95Idx];
-    statLatencyP95.textContent = `${p95Val.toFixed(1)} ms`;
-
-    const progressPct = (totalReqs / maxSimulatedReqs) * 100;
-    statProgressBar.style.width = `${progressPct}%`;
-
-    // Only render to DOM if log fits current view filter
-    const activeFilter = filterLogType.value;
-    const isInteresting = [400, 403, 408, 429, 500].includes(strategy.code);
-    
-    if (activeFilter === "all" || (activeFilter === "interesting" && isInteresting)) {
-      renderRow(requestRecord);
-    }
-
-    // Update Chart dynamically
-    latencyChart.data.labels.push(`#${totalReqs}`);
-    latencyChart.data.datasets[0].data.push(latency);
-    
-    if (latencyChart.data.labels.length > 20) {
-      latencyChart.data.labels.shift();
-      latencyChart.data.datasets[0].data.shift();
-    }
-    
-    // Performance optimization: updates chart instantly without animating grids
-    latencyChart.update('none');
-  }
-
-  function renderRow(record) {
-    let codeBadgeClass = "text-green-500 bg-green-500/10 border border-green-500/20";
-    if (record.code === 422) codeBadgeClass = "text-yellow-500 bg-yellow-500/10 border border-yellow-500/20";
-    if (record.code === 400) codeBadgeClass = "text-orange-400 bg-orange-400/10 border border-orange-400/20";
-    if (record.code >= 500) codeBadgeClass = "text-red-500 bg-red-500/10 border border-red-500/20";
-    if (record.code === 408) codeBadgeClass = "text-red-400 bg-red-400/10 border border-red-400/20 animate-pulse";
-
-    const tableRow = document.createElement("tr");
-    tableRow.className = "hover:bg-zinc-900/30 transition-colors duration-100";
-    tableRow.setAttribute("data-request-id", record.id);
-    
-    tableRow.innerHTML = `
-      <td class="px-6 py-3.5 text-zinc-500">${record.timestamp}</td>
-      <td class="px-6 py-3.5 font-medium text-gray-300 font-mono text-[11px]">${record.endpoint}</td>
-      <td class="px-6 py-3.5 text-amber-500 font-bold">${record.method}</td>
-      <td class="px-6 py-3.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${codeBadgeClass}">${record.code}</span></td>
-      <td class="px-6 py-3.5 text-zinc-400 flex items-center justify-between">
-        <span>${record.strategy}</span>
-        ${record.msg ? `<span class="text-[9px] font-semibold tracking-wider text-red-500 uppercase">${record.msg}</span>` : ''}
-      </td>
-    `;
-    
-    // Bind click listener for diffing drawer directly to optimized row injection
-    tableRow.addEventListener("click", () => openDiffDrawer(record));
-
-    logsTableBody.insertBefore(tableRow, logsTableBody.firstChild);
-
-    // Remove old rows to stay extremely high-performance (limit to latest 30)
-    if (logsTableBody.children.length > 30) {
-      logsTableBody.removeChild(logsTableBody.lastChild);
-    }
-  }
-
-  // 5. Data Intelligence: Dropdown Filter rendering
-  filterLogType.addEventListener("change", (e) => {
-    const selected = e.target.value;
-    logsTableBody.innerHTML = "";
-    
-    const filtered = fuzzedRequests.filter(record => {
-      if (selected === "all") return true;
-      return [400, 403, 408, 429, 500].includes(record.code);
-    });
-
-    if (filtered.length === 0) {
-      logsTableBody.innerHTML = `
-        <tr id="table-empty-row">
-          <td colspan="5" class="px-6 py-12 text-center text-zinc-600 font-sans font-medium">
-            <i data-lucide="inbox" class="w-8 h-8 mx-auto mb-2 text-zinc-700"></i>
-            No records match the current view filter.
-          </td>
-        </tr>
-      `;
-      lucide.createIcons();
-    } else {
-      // Render latest 30 matching logs
-      const itemsToRender = filtered.slice(-30).reverse();
-      itemsToRender.forEach(record => renderRow(record));
-    }
-  });
-
-  // 6. Payload Diffing Side-Panel Drawer
-  function highlightDiff(baseline, fuzzed) {
-    if (typeof fuzzed === "string") {
-      // For malformed raw strings, just highlight the whole text
-      return `<span class="bg-red-950/80 text-red-400 font-bold p-1 rounded border border-red-900/40">${fuzzed}</span>`;
-    }
-    
-    // If it's a dict, construct highlighted diff string
-    let resultLines = [];
-    const keys = Object.keys(fuzzed);
-    
-    resultLines.push("{");
-    keys.forEach((key, index) => {
-      const val = fuzzed[key];
-      const baselineVal = baseline[key];
-      const isDiff = baselineVal === undefined || JSON.stringify(val) !== JSON.stringify(baselineVal);
-      
-      const lineStr = `  "${key}": ${JSON.stringify(val)}`;
-      const comma = index < keys.length - 1 ? "," : "";
-      
-      if (isDiff) {
-        // Highlight line
-        resultLines.push(`<span class="bg-red-950/60 text-red-400 font-bold px-2 py-0.5 rounded border border-red-900/30 inline-block w-full">${lineStr}${comma}</span>`);
-      } else {
-        resultLines.push(`${lineStr}${comma}`);
-      }
-    });
-    resultLines.push("}");
-    return resultLines.join("\n");
-  }
-
-function openDiffDrawer(record) {
-    diffMetaMethod.textContent = record.method;
-    diffMetaEndpoint.textContent = record.endpoint;
-    diffMetaStrategy.textContent = record.strategy;
-    diffMetaCode.textContent = record.code;
-
-    // Dynamic badges class
-    let badgeClass = "px-2 py-0.5 rounded text-[10px] font-bold border ";
-    if (record.code === 200) badgeClass += "text-green-500 bg-green-500/10 border-green-500/20";
-    else if (record.code === 422) badgeClass += "text-yellow-500 bg-yellow-500/10 border-yellow-500/20";
-    else if (record.code === 400) badgeClass += "text-orange-400 bg-orange-400/10 border-orange-400/20";
-    else badgeClass += "text-red-500 bg-red-500/10 border-red-500/20";
-    diffMetaCode.className = badgeClass;
-
-    // Render baseline & highlight diffs
-    diffBaselineJson.innerHTML = JSON.stringify(lastSuccessfulPayload, null, 2);
-    diffFuzzedJson.innerHTML = highlightDiff(lastSuccessfulPayload, record.payload);
-
-    // Slide panel in
-    document.getElementById("payload-diff-panel").classList.add("drawer-open");
+  var pg=g("page-"+key); if(pg) pg.classList.add("active");
+  txt("page-title",TITLES[key]||"");
 }
-
-function closeDiffDrawer() {
-    document.getElementById("payload-diff-panel").classList.remove("drawer-open");
-}
-
-  btnCloseDiff.addEventListener("click", closeDiffDrawer);
-  btnCloseDiffBottom.addEventListener("click", closeDiffDrawer);
-
-  // 7. Interactive Stats Modal
-  btnReportSummary.addEventListener("click", () => {
-    // Fill stats fields
-    reportTotalReqs.textContent = totalReqs;
-    
-    const rate = totalReqs ? (((totalReqs - failedReqs) / totalReqs) * 100).toFixed(1) : "0.0";
-    reportSuccessRate.textContent = `${rate}%`;
-    reportVulnCount.textContent = failedReqs;
-
-    // Categorized quantities
-    const malformed = fuzzedRequests.filter(r => r.category === "malformed").length;
-    const types = fuzzedRequests.filter(r => r.category === "types").length;
-    const overflow = fuzzedRequests.filter(r => r.category === "overflow").length;
-    const timeouts = fuzzedRequests.filter(r => r.category === "timeouts").length;
-
-    reportCatMalformed.textContent = malformed;
-    reportCatTypes.textContent = types;
-    reportCatOverflow.textContent = overflow;
-    reportCatTimeouts.textContent = timeouts;
-
-    // Show modal cleanly
-    reportSummaryModal.classList.remove("hidden");
-    setTimeout(() => {
-      reportSummaryModal.classList.add("modal-show");
-    }, 10);
-  });
-
-  function closeReportModal() {
-    reportSummaryModal.classList.remove("modal-show");
-    setTimeout(() => {
-      reportSummaryModal.classList.add("hidden");
-    }, 200);
-  }
-
-  btnCloseReport.addEventListener("click", closeReportModal);
-
-  // Close modals when clicking overlay
-  reportSummaryModal.addEventListener("click", (e) => {
-    if (e.target === reportSummaryModal) closeReportModal();
-  });
-
-  // 8. Export Functionality using PapaParse
-  function handleCsvExport(dataToExport) {
-    if (dataToExport.length === 0) {
-      alert("No logs available to export.");
-      return;
-    }
-
-    // Map logs to simple structured format
-    const formattedData = dataToExport.map(record => ({
-      Timestamp: record.timestamp,
-      Endpoint: record.endpoint,
-      Method: record.method,
-      ResponseCode: record.code,
-      FuzzStrategy: record.strategy,
-      Payload: typeof record.payload === "object" ? JSON.stringify(record.payload) : record.payload
-    }));
-
-    // PapaParse Unparse
-    const csvContent = Papa.unparse(formattedData);
-    
-    // Trigger local browser download
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    
-    const filterState = filterLogType.value === "all" ? "all" : "anomalies";
-    link.setAttribute("download", `fuzzshield_report_${filterState}_${Date.now()}.csv`);
-    link.style.visibility = "hidden";
-    
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-
-  btnExportCsv.addEventListener("click", () => {
-    const selected = filterLogType.value;
-    const dataset = fuzzedRequests.filter(record => {
-      if (selected === "all") return true;
-      return [400, 403, 408, 429, 500].includes(record.code);
-    });
-    handleCsvExport(dataset);
-  });
-
-  btnReportDownload.addEventListener("click", () => {
-    handleCsvExport(fuzzedRequests);
-  });
-
-  function stopFuzzing(completed = false) {
-    isFuzzing = false;
-    clearInterval(timerId);
-    
-    btnStart.innerHTML = `<i data-lucide="play" class="w-4 h-4 fill-zinc-950"></i><span>START FUZZING TEST</span>`;
-    btnStart.className = "w-full py-4 rounded-xl gold-gradient-bg text-zinc-950 font-bold text-sm tracking-wider flex items-center justify-center space-x-2 shadow-lg shadow-amber-500/15 hover:shadow-amber-500/25 transition-all duration-300 transform active:scale-[0.98]";
-    lucide.createIcons();
-
-    if (completed) {
-      headerStatusText.textContent = "Engine Standby (Scan Completed)";
-      headerStatusDot.className = "w-2 h-2 rounded-full bg-amber-500 shadow-amber-500/50 shadow-sm";
-      statStatus.textContent = "COMPLETE";
-      statStatus.className = "text-3xl font-bold font-title tracking-tight text-green-400";
-      
-      // Auto trigger report summary modal on completion
-      setTimeout(() => {
-        btnReportSummary.click();
-      }, 500);
-    } else {
-      headerStatusText.textContent = "Engine Standby";
-      headerStatusDot.className = "w-2 h-2 rounded-full status-dot-idle";
-      statStatus.textContent = "STANDBY";
-      statStatus.className = "text-3xl font-bold font-title tracking-tight text-zinc-500 uppercase";
-    }
-  }
-
-  btnStart.addEventListener("click", () => {
-    if (isFuzzing) {
-      stopFuzzing(false);
-    } else {
-      startFuzzing();
-    }
-  });
-
-  btnClearLogs.addEventListener("click", () => {
-    logsTableBody.innerHTML = `
-      <tr id="table-empty-row">
-        <td colspan="5" class="px-6 py-12 text-center text-zinc-600 font-sans font-medium">
-          <i data-lucide="inbox" class="w-8 h-8 mx-auto mb-2 text-zinc-700"></i>
-          No requests dispatched yet. Initiate fuzzing above.
-        </td>
-      </tr>
-    `;
-    fuzzedRequests = [];
-    lucide.createIcons();
-  });
-
+NAV_PAGES.forEach(function(p){
+  var lk=g("nav-"+p);
+  if(lk) lk.addEventListener("click",function(e){e.preventDefault();showPage(p);});
 });
+
+// ── slider ──
+var slider=g("conc-slider");
+if(slider) slider.addEventListener("input",function(){txt("conc-display",this.value+" threads");});
+
+// ── strategies ──
+var S=[
+  {lbl:"Malformed JSON: trailing comma",   code:400,mn:12,  mx:25,  cat:"malformed",pay:'{"username":"alice","age":30,}'},
+  {lbl:"Malformed JSON: missing brace",    code:400,mn:10,  mx:18,  cat:"malformed",pay:'{"username":"alice","age":30'},
+  {lbl:"Malformed JSON: missing separator",code:400,mn:15,  mx:22,  cat:"malformed",pay:'{"username":"alice" "age":30}'},
+  {lbl:"Malformed JSON: extra junk bytes", code:400,mn:18,  mx:30,  cat:"malformed",pay:'{"username":"alice","age":30}JUNK'},
+  {lbl:"Baseline validation check",        code:200,mn:35,  mx:50,  cat:"success",  pay:{username:"alice",age:30,is_active:true}},
+  {lbl:"Empty body fallback",              code:200,mn:32,  mx:45,  cat:"success",  pay:{}},
+  {lbl:"Type swap: username → integer",    code:422,mn:22,  mx:40,  cat:"types",    pay:{username:12345,age:30,is_active:true}},
+  {lbl:"Type swap: age → boolean",         code:422,mn:20,  mx:38,  cat:"types",    pay:{username:"alice",age:true,is_active:true}},
+  {lbl:"Type swap: age → list",            code:422,mn:25,  mx:42,  cat:"types",    pay:{username:"alice",age:[],is_active:true}},
+  {lbl:"Type swap: is_active → string",    code:422,mn:21,  mx:35,  cat:"types",    pay:{username:"alice",age:30,is_active:"bad_type"}},
+  {lbl:"Overflow: username >5000 chars",   code:500,mn:90,  mx:140, cat:"overflow", msg:"DB Column Overflow",           pay:{username:"A".repeat(60)+"…(6000)",age:30,is_active:true}},
+  {lbl:"Overflow: age → 1.79e308",         code:500,mn:85,  mx:130, cat:"overflow", msg:"Arithmetic Error: Float limit",pay:{username:"alice",age:1.79e308,is_active:true}},
+  {lbl:"Traversal: ../../etc/passwd",      code:500,mn:110, mx:180, cat:"overflow", msg:"Security Filter Exception",    pay:{username:"../../etc/passwd",age:30,is_active:true}},
+  {lbl:"Timeout: age = -1",               code:408,mn:5000,mx:5000,cat:"timeouts", msg:"Read Timeout (5.0s)",          pay:{username:"alice",age:-1,is_active:true}},
+  {lbl:"Timeout: age = -2147483648",      code:408,mn:5000,mx:5000,cat:"timeouts", msg:"Read Timeout (5.0s)",          pay:{username:"alice",age:-2147483648,is_active:true}}
+];
+
+// ── state ──
+var records=[], lastOk={username:"alice",age:30,is_active:true};
+var fuzzing=false, timer=null, total=0, failed=0, lats=[];
+var MAX=52;
+
+// ── chart ──
+var chart=null;
+var cv=g("latency-chart");
+if(cv&&window.Chart){
+  var ctx=cv.getContext("2d");
+  var gr=ctx.createLinearGradient(0,0,0,200);
+  gr.addColorStop(0,"rgba(245,158,11,.22)"); gr.addColorStop(1,"rgba(245,158,11,0)");
+  chart=new Chart(ctx,{
+    type:"line",
+    data:{labels:[],datasets:[{data:[],borderColor:"#f59e0b",borderWidth:1.5,pointBackgroundColor:"#f59e0b",pointBorderColor:"#070709",pointRadius:2,pointHoverRadius:5,fill:true,backgroundColor:gr,tension:.2,spanGaps:true}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},
+      scales:{x:{grid:{display:false},ticks:{color:"#4b5563",font:{size:8}}},y:{grid:{color:"rgba(245,158,11,.02)"},ticks:{color:"#4b5563",font:{size:8}},min:0}}}
+  });
+}
+
+// ── histogram ──
+function bucket(ms){if(ms<10)return 0;if(ms<50)return 1;if(ms<100)return 2;if(ms<250)return 3;if(ms<500)return 4;if(ms<1000)return 5;return 6;}
+function updateHist(){
+  var b=[0,0,0,0,0,0,0];
+  lats.forEach(function(ms){b[bucket(ms)]++;});
+  var mx=Math.max.apply(null,b.concat(1));
+  for(var i=0;i<7;i++){wd("h"+i,Math.round(b[i]/mx*100));txt("hc"+i,"("+b[i]+")");}
+}
+
+// ── cmd centre ──
+function updateCmd(){
+  var url=g("target-url")?g("target-url").value:"http://127.0.0.1:8000/api/users";
+  var mth=g("method-sel")?g("method-sel").value:"POST";
+  txt("cmd-target",url); txt("cmd-method",mth);
+  var n=total||1;
+  var s2=records.filter(function(r){return r.code>=200&&r.code<300;}).length;
+  var s3=records.filter(function(r){return r.code>=300&&r.code<400;}).length;
+  var s4=records.filter(function(r){return r.code>=400&&r.code<500&&r.code!==408;}).length;
+  var s5=records.filter(function(r){return r.code>=500;}).length;
+  var st=records.filter(function(r){return r.code===408;}).length;
+  var p=function(v){return total?((v/total)*100).toFixed(1)+"%":"0.0%";};
+  txt("cmd-s2xx",s2);txt("cmd-s2xx-p",p(s2));
+  txt("cmd-s3xx",s3);txt("cmd-s3xx-p",p(s3));
+  txt("cmd-s4xx",s4);txt("cmd-s4xx-p",p(s4));
+  txt("cmd-s5xx",s5);txt("cmd-s5xx-p",p(s5));
+  txt("cmd-sto", st);txt("cmd-sto-p", p(st));
+  txt("cmd-sne", 0); txt("cmd-sne-p","0.0%");
+  if(lats.length){
+    var so=lats.slice().sort(function(a,b){return a-b;});
+    var avg=lats.reduce(function(a,b){return a+b;},0)/lats.length;
+    var p95v=so[Math.min(Math.ceil(so.length*.95)-1,so.length-1)];
+    txt("cmd-min",so[0].toFixed(1)+" ms");txt("cmd-max",so[so.length-1].toFixed(1)+" ms");
+    txt("cmd-avg",avg.toFixed(1)+" ms");txt("cmd-p95",p95v.toFixed(1)+" ms");
+  }else{["cmd-min","cmd-max","cmd-avg","cmd-p95"].forEach(function(id){txt(id,"0.0 ms");});}
+  var prog=total>0?(total/MAX*100):0;
+  wd("cmd-prog-fill",Math.min(prog,100));txt("cmd-prog-text",total+" / "+MAX+" ("+prog.toFixed(1)+"%)");
+  updateHist();
+}
+
+// ── log stream ──
+function pushLog(lvl,msg,pay){
+  var el=g("cmd-logs"); if(!el)return;
+  var d=new Date();
+  var ts="["+d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")+" "+d.toLocaleTimeString()+","+String(d.getMilliseconds()).padStart(3,"0")+"]";
+  var cls=lvl==="INFO"?"log-info":lvl==="WARN"?"log-warn":"log-err";
+  var div=document.createElement("div"); div.className="log-entry";
+  div.innerHTML='<span class="log-ts">'+ts+'</span> <span class="'+cls+'">'+lvl+':</span> <span class="log-msg">'+msg+'</span>'+(pay?' <span class="log-pay">'+pay+'</span>':"");
+  el.insertBefore(div,el.firstChild);
+  while(el.children.length>60) el.removeChild(el.lastChild);
+}
+
+// ── summary ──
+function showSummary(){
+  var s2=records.filter(function(r){return r.code>=200&&r.code<300;}).length;
+  var s4=records.filter(function(r){return r.code>=400&&r.code<500&&r.code!==408;}).length;
+  var s5=records.filter(function(r){return r.code>=500;}).length;
+  var st=records.filter(function(r){return r.code===408;}).length;
+  var so=lats.slice().sort(function(a,b){return a-b;});
+  var avg=lats.length?(lats.reduce(function(a,b){return a+b;},0)/lats.length).toFixed(1):"0.0";
+  var p95=so.length?so[Math.min(Math.ceil(so.length*.95)-1,so.length-1)].toFixed(1):"0.0";
+  txt("sum-total",total+" / "+MAX);txt("sum-success",s2);txt("sum-client",s4);txt("sum-server",s5);txt("sum-timeout",st);
+  txt("sum-avg",avg+" ms | 95th: "+p95+" ms");
+  var box=g("cmd-summary"); if(box) box.classList.add("show");
+  pushLog("INFO","Structured results saved to fuzz_results.json");
+}
+
+// ── start/stop ──
+function startFuzzing(){
+  fuzzing=true; total=0; failed=0; lats=[]; records=[];
+  var box=g("cmd-summary"); if(box) box.classList.remove("show");
+  var logs=g("cmd-logs"); if(logs) logs.innerHTML="";
+  var btn=g("btn-start");
+  if(btn){btn.className="stopped running";btn.innerHTML='<svg viewBox="0 0 24 24" fill="white" stroke="none" width="16" height="16"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>STOP FUZZING RUN';}
+  txt("status-text","Engine Active");
+  var dot=g("status-dot"); if(dot) dot.className="dot-active";
+  var sv=g("stat-status-val"); if(sv){sv.textContent="ACTIVE";sv.style.color="#f59e0b";}
+  var ov=g("chart-overlay"); if(ov) ov.classList.add("hidden-overlay");
+  var tb=g("logs-tbody"); if(tb) tb.innerHTML="";
+  if(chart){chart.data.labels=[];chart.data.datasets[0].data=[];chart.update("none");}
+  updateCmd();
+  pushLog("INFO","Starting API Fuzzing Tool...");
+  pushLog("INFO","Initializing payload generator, config validation, and async request pool.");
+  setTimeout(function(){pushLog("INFO","Successfully loaded JSON template from user_template.json");},350);
+  setTimeout(function(){pushLog("INFO","Generated "+MAX+" fuzzed payloads (Type, Boundary, Malformed JSON)");},700);
+  setTimeout(function(){pushLog("INFO","Spawning asynchronous execution engine...");},1050);
+  var sv2=g("conc-slider"); var iv=Math.max(60,Math.floor(2600/(sv2?parseInt(sv2.value):25)));
+  timer=setInterval(function(){if(total>=MAX){stopFuzzing(true);}else{tick();}},iv);
+}
+
+function stopFuzzing(done){
+  fuzzing=false; clearInterval(timer);
+  var btn=g("btn-start");
+  if(btn){btn.className="stopped gold-bg";btn.innerHTML='<svg viewBox="0 0 24 24" fill="#070709" stroke="none" width="16" height="16"><polygon points="5 3 19 12 5 21 5 3"/></svg>START FUZZING TEST';}
+  if(done){
+    txt("status-text","Engine Standby — Scan Complete");
+    var dot=g("status-dot"); if(dot) dot.className="dot-idle";
+    var sv=g("stat-status-val"); if(sv){sv.textContent="COMPLETE";sv.style.color="#22c55e";}
+    updateCmd(); showSummary();
+    setTimeout(function(){openReport();},800);
+  }else{
+    txt("status-text","Engine Standby");
+    var dot2=g("status-dot"); if(dot2) dot2.className="dot-idle";
+    var sv2=g("stat-status-val"); if(sv2){sv2.textContent="STANDBY";sv2.style.color="#6b7280";}
+  }
+}
+
+function ri(mn,mx){return Math.floor(Math.random()*(mx-mn+1))+mn;}
+function pick(a){return a[Math.floor(Math.random()*a.length)];}
+
+function tick(){
+  total++;
+  var rng=Math.random(), pool;
+  if(rng<.28)      pool=S.filter(function(s){return s.code===200;});
+  else if(rng<.78) pool=S.filter(function(s){return s.code===400||s.code===422;});
+  else if(rng<.92) pool=S.filter(function(s){return s.code===500;});
+  else              pool=S.filter(function(s){return s.code===408;});
+  var s=pick(pool), lat=ri(s.mn,s.mx);
+  lats.push(lat);
+  if(s.code>=400) failed++;
+  if(s.code===200&&typeof s.pay==="object"&&Object.keys(s.pay).length>0) lastOk=s.pay;
+  var url=g("target-url")?g("target-url").value:"http://127.0.0.1:8000/api/users";
+  var mth=g("method-sel")?g("method-sel").value:"POST";
+  var rec={ts:new Date().toLocaleTimeString(),url:url,mth:mth,code:s.code,lbl:s.lbl,cat:s.cat,lat:lat,msg:s.msg||"",pay:s.pay};
+  records.push(rec);
+  // stats
+  txt("stat-total",total); txt("stat-failed",failed);
+  txt("stat-fail-pct",((failed/total)*100).toFixed(1)+"%");
+  var sl=g("conc-slider"); txt("stat-rate",(Math.floor(Math.random()*10)+Math.floor((sl?parseInt(sl.value):25)*.8))+" req/s");
+  var al=(lats.reduce(function(a,b){return a+b;},0)/lats.length).toFixed(1);
+  txt("stat-latency",al+" ms");
+  var so2=lats.slice().sort(function(a,b){return a-b;});
+  txt("stat-p95",so2[Math.min(Math.ceil(so2.length*.95)-1,so2.length-1)].toFixed(1)+" ms");
+  wd("stat-prog-fill",total/MAX*100);
+  // log table
+  var fv=g("filter-log")?g("filter-log").value:"all";
+  var intrig=[400,403,408,429,500].indexOf(s.code)!==-1;
+  if(fv==="all"||(fv==="interesting"&&intrig)) renderRow(rec);
+  // chart
+  if(chart){chart.data.labels.push("#"+total);chart.data.datasets[0].data.push(lat);if(chart.data.labels.length>20){chart.data.labels.shift();chart.data.datasets[0].data.shift();}chart.update("none");}
+  // cmd
+  updateCmd();
+  if(s.code>=500) pushLog("ERROR","Server Error ("+s.code+") for payload:",typeof s.pay==="object"?JSON.stringify(s.pay):s.pay);
+  else if(s.code===408) pushLog("WARN","Timeout (408) — "+(s.msg||"Read timeout exceeded"));
+}
+
+// ── row render ──
+function badge(c){
+  if(c===200) return "code-badge badge-200";
+  if(c===422) return "code-badge badge-422";
+  if(c===400) return "code-badge badge-400";
+  if(c===408) return "code-badge badge-408";
+  return "code-badge badge-500";
+}
+function renderRow(r){
+  var tb=g("logs-tbody"); if(!tb) return;
+  var tr=document.createElement("tr");
+  tr.innerHTML='<td style="color:#6b7280;font-family:JetBrains Mono,monospace">'+r.ts+'</td>'+
+    '<td style="font-family:JetBrains Mono,monospace;font-size:10px;color:#d1d5db">'+r.url+'</td>'+
+    '<td style="color:#f59e0b;font-weight:700">'+r.mth+'</td>'+
+    '<td><span class="'+badge(r.code)+'">'+r.code+'</span></td>'+
+    '<td style="color:#9ca3af"><span>'+r.lbl+'</span>'+(r.msg?'<span class="err-tag">'+r.msg+'</span>':"")+'</td>';
+  tr.addEventListener("click",function(){openDiff(r);});
+  tb.insertBefore(tr,tb.firstChild);
+  while(tb.children.length>30) tb.removeChild(tb.lastChild);
+}
+
+// ── filter ──
+var fl=g("filter-log");
+if(fl) fl.addEventListener("change",function(){
+  var tb=g("logs-tbody"); if(!tb) return;
+  tb.innerHTML="";
+  var val=this.value;
+  var list=val==="all"?records:records.filter(function(r){return [400,403,408,429,500].indexOf(r.code)!==-1;});
+  if(!list.length){tb.innerHTML='<tr class="empty-row"><td colspan="5">No records match filter.</td></tr>';}
+  else list.slice(-30).reverse().forEach(renderRow);
+});
+
+// ── diff drawer ──
+function diffHtml(base,fuzz){
+  if(typeof fuzz==="string") return '<span style="background:rgba(220,38,38,.2);color:#f87171;font-weight:700;padding:2px 6px;border-radius:3px;display:inline-block;width:100%">'+fuzz+'</span>';
+  var out=["{"];
+  Object.keys(fuzz).forEach(function(k,i,arr){
+    var v=fuzz[k], diff=base[k]===undefined||JSON.stringify(v)!==JSON.stringify(base[k]);
+    var line='  "'+k+'": '+JSON.stringify(v)+(i<arr.length-1?",":"");
+    out.push(diff?'<span style="background:rgba(220,38,38,.15);color:#f87171;font-weight:700;padding:1px 4px;border-radius:3px;display:inline-block;width:100%">'+line+'</span>':line);
+  });
+  out.push("}"); return out.join("\n");
+}
+function openDiff(r){
+  txt("diff-method",r.mth); txt("diff-endpoint",r.url); txt("diff-strategy",r.lbl); txt("diff-code",r.code);
+  var dc=g("diff-code");
+  if(dc){var cl="code-badge ";cl+=r.code===200?"badge-200":r.code===422?"badge-422":r.code===400?"badge-400":"badge-500";dc.className=cl;}
+  txt("diff-baseline",JSON.stringify(lastOk,null,2)); htm("diff-fuzzed",diffHtml(lastOk,r.pay));
+  var dw=g("diff-drawer"); if(dw) dw.classList.add("open");
+}
+function closeDiff(){var dw=g("diff-drawer"); if(dw) dw.classList.remove("open");}
+var bd1=g("btn-close-diff"), bd2=g("btn-close-diff-2");
+if(bd1) bd1.addEventListener("click",closeDiff);
+if(bd2) bd2.addEventListener("click",closeDiff);
+
+// ── report ──
+function openReport(){
+  txt("rep-total",total);
+  txt("rep-rate",total?(((total-failed)/total)*100).toFixed(1)+"%":"0%");
+  txt("rep-vulns",failed);
+  txt("rep-malformed",records.filter(function(r){return r.cat==="malformed";}).length);
+  txt("rep-types",    records.filter(function(r){return r.cat==="types";}).length);
+  txt("rep-overflow", records.filter(function(r){return r.cat==="overflow";}).length);
+  txt("rep-timeouts", records.filter(function(r){return r.cat==="timeouts";}).length);
+  var b=g("report-backdrop"); if(b) b.classList.add("open");
+}
+function closeReport(){var b=g("report-backdrop"); if(b) b.classList.remove("open");}
+var brpt=g("btn-report"), bcr=g("btn-close-report"), rbk=g("report-backdrop");
+if(brpt) brpt.addEventListener("click",openReport);
+if(bcr)  bcr.addEventListener("click",closeReport);
+if(rbk)  rbk.addEventListener("click",function(e){if(e.target===rbk) closeReport();});
+
+// ── CSV ──
+function csv(data){
+  if(!data.length){alert("No records to export.");return;}
+  var hdr=["Timestamp","Endpoint","Method","Code","Strategy","Payload"];
+  var rows=data.map(function(r){
+    return [r.ts,r.url,r.mth,r.code,r.lbl,typeof r.pay==="object"?JSON.stringify(r.pay):r.pay]
+      .map(function(v){return'"'+String(v).replace(/"/g,'""')+'"';}).join(",");
+  });
+  var blob=new Blob([hdr.join(",")+"\n"+rows.join("\n")],{type:"text/csv"});
+  var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="fuzzshield_"+Date.now()+".csv";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+var bex=g("btn-export"), brdl=g("btn-rep-dl");
+if(bex)  bex.addEventListener("click",function(){var fv=g("filter-log")?g("filter-log").value:"all";csv(fv==="all"?records:records.filter(function(r){return [400,403,408,429,500].indexOf(r.code)!==-1;}));});
+if(brdl) brdl.addEventListener("click",function(){csv(records);});
+
+// ── clear ──
+var bcl=g("btn-clear");
+if(bcl) bcl.addEventListener("click",function(){var tb=g("logs-tbody");if(tb) tb.innerHTML='<tr class="empty-row"><td colspan="5">Logs cleared.</td></tr>';records=[];});
+
+// ── start/stop btn ──
+var bst=g("btn-start");
+if(bst) bst.addEventListener("click",function(){if(fuzzing) stopFuzzing(false); else startFuzzing();});
+
+// ── init ──
+updateCmd();
+
+})();

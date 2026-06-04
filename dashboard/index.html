@@ -1,653 +1,1052 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>API Fuzzer Security Research Platform</title>
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            amber: {
-              50: '#fef3c7',
-              100: '#fde68a',
-              200: '#fcd34d',
-              300: '#fbbf24',
-              400: '#fb923c',
-              500: '#f59e0b',
-              600: '#d97706',
-              700: '#b45309',
-              800: '#92400e',
-              900: '#78350f',
-            },
-            zinc: {
-              950: '#070709',
-              900: '#0f0f13',
-              800: '#1a1a24',
-            }
-          },
-          fontFamily: {
-            title: ['Outfit', 'sans-serif'],
-            body: ['Plus Jakarta Sans', 'sans-serif'],
-          }
-        }
-      }
-    }
-  </script>
-  
-  <!-- Custom CSS for gradients & animations -->
-  <link rel="stylesheet" href="styles.css">
-  
-  <!-- Chart.js CDN for modern interactive plotting -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Lucide Icons CDN -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- PapaParse for high-performance CSV handling -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FuzzShield — API Security Research Platform</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{background:#070709;color:#f3f4f6;font-family:'Plus Jakarta Sans',sans-serif;display:flex;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4,h5,h6{font-family:'Outfit',sans-serif}
+
+/* scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:#070709}
+::-webkit-scrollbar-thumb{background:rgba(245,158,11,.25);border-radius:3px}
+
+/* glass */
+.glass{background:rgba(15,15,20,.7);backdrop-filter:blur(8px);border:1px solid rgba(245,158,11,.08);box-shadow:0 8px 32px rgba(0,0,0,.37);transition:border-color .2s,box-shadow .2s}
+.glass:hover{border-color:rgba(245,158,11,.18);box-shadow:0 8px 32px rgba(245,158,11,.05)}
+
+/* gradients */
+.gold-bg{background:linear-gradient(135deg,#f59e0b,#d97706)}
+.gold-text{background:linear-gradient(135deg,#f3f4f6,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+
+/* status dots */
+.dot-idle{display:inline-block;width:8px;height:8px;border-radius:50%;background:#6b7280;box-shadow:0 0 5px #6b7280}
+.dot-active{display:inline-block;width:8px;height:8px;border-radius:50%;background:#10b981;box-shadow:0 0 10px #10b981;animation:pulseDot 1.8s infinite}
+@keyframes pulseDot{0%{transform:scale(.95);box-shadow:0 0 0 0 rgba(16,185,129,.7)}70%{transform:scale(1);box-shadow:0 0 0 7px rgba(16,185,129,0)}100%{transform:scale(.95);box-shadow:0 0 0 0 rgba(16,185,129,0)}}
+
+/* sidebar */
+#sidebar{width:256px;min-width:256px;height:100vh;background:rgba(7,7,9,.95);border-right:1px solid #111114;display:flex;flex-direction:column;justify-content:space-between;position:relative;z-index:20}
+#sidebar-top{padding:24px}
+.logo-box{display:flex;align-items:center;gap:12px;margin-bottom:32px}
+.logo-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 20px rgba(245,158,11,.2)}
+.logo-icon svg{width:20px;height:20px;fill:#070709}
+.logo-name{font-size:18px;font-weight:700;letter-spacing:.05em}
+.logo-sub{font-size:9px;color:#6b7280;letter-spacing:.15em;text-transform:uppercase;font-weight:600;margin-top:1px}
+nav{display:flex;flex-direction:column;gap:6px}
+.nav-link{display:flex;align-items:center;gap:12px;padding:11px 16px;border-radius:12px;border:1px solid transparent;cursor:pointer;transition:all .18s;font-size:14px;font-weight:500;color:#9ca3af;text-decoration:none;user-select:none}
+.nav-link svg{width:20px;height:20px;flex-shrink:0}
+.nav-link:hover{color:#f3f4f6;background:rgba(255,255,255,.04)}
+.nav-link.active-amber{color:#f59e0b;background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.2)}
+.nav-link.active-purple{color:#c084fc;background:rgba(192,132,252,.1);border-color:rgba(192,132,252,.2)}
+#sidebar-footer{padding:20px 24px;border-top:1px solid #111114;display:flex;align-items:center;gap:10px}
+.avatar{width:38px;height:38px;border-radius:50%;background:#111114;border:1px solid #1c1c22;display:flex;align-items:center;justify-content:center;font-weight:700;color:#f59e0b;font-family:'Outfit',sans-serif;font-size:15px;flex-shrink:0}
+.avatar-name{font-size:12px;font-weight:600;color:#f3f4f6}
+.avatar-role{font-size:10px;color:#6b7280}
+
+/* main */
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative}
+#topbar{height:64px;background:rgba(7,7,9,.6);backdrop-filter:blur(8px);border-bottom:1px solid #111114;display:flex;align-items:center;justify-content:space-between;padding:0 32px;flex-shrink:0;z-index:10}
+#topbar-left{display:flex;align-items:center;gap:16px}
+#page-title{font-size:17px;font-weight:700;font-family:'Outfit',sans-serif}
+.divider{width:1px;height:16px;background:#222228}
+.status-pill{display:flex;align-items:center;gap:6px;font-size:12px;color:#9ca3af;font-weight:500}
+#topbar-right{display:flex;align-items:center;gap:12px}
+.top-btn{display:flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:8px;border:1px solid rgba(245,158,11,.2);background:rgba(245,158,11,.08);color:#f59e0b;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s}
+.top-btn:hover{background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.35)}
+.top-btn svg{width:14px;height:14px}
+.top-tag{font-size:11px;font-family:'JetBrains Mono',monospace;font-weight:600;color:#6b7280;background:#111114;border:1px solid #1c1c22;padding:4px 10px;border-radius:8px}
+.icon-btn{width:32px;height:32px;border-radius:8px;background:#111114;border:1px solid #1c1c22;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#9ca3af;transition:all .15s}
+.icon-btn:hover{color:#f3f4f6;border-color:#2a2a32}
+.icon-btn svg{width:16px;height:16px}
+
+/* page container */
+#page-container{flex:1;overflow-y:auto;padding:32px}
+
+/* pages */
+.page{display:none}
+.page.active{display:block}
+
+/* dashboard grid */
+.dash-grid{display:grid;grid-template-columns:340px 1fr;gap:28px;margin-bottom:28px}
+
+/* control panel */
+#control-panel{border-radius:24px;padding:24px;display:flex;flex-direction:column;gap:20px}
+.panel-header{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.panel-icon{width:32px;height:32px;border-radius:10px;background:rgba(245,158,11,.1);display:flex;align-items:center;justify-content:center;color:#f59e0b}
+.panel-icon svg{width:16px;height:16px}
+.panel-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af;font-family:'Outfit',sans-serif}
+label.field-label{font-size:11px;font-weight:600;color:#9ca3af;display:flex;justify-content:space-between;margin-bottom:6px}
+label.field-label span.hint{color:rgba(245,158,11,.7)}
+.text-input{width:100%;padding:10px 12px;background:rgba(15,15,19,.7);border:1px solid #1c1c22;border-radius:10px;color:#f3f4f6;font-size:11px;font-family:'JetBrains Mono',monospace;outline:none;transition:border-color .15s}
+.text-input:focus{border-color:rgba(245,158,11,.5)}
+.row-2{display:grid;grid-template-columns:90px 1fr;gap:10px}
+select.sel{width:100%;padding:10px 12px;background:rgba(15,15,19,.7);border:1px solid #1c1c22;border-radius:10px;color:#f3f4f6;font-size:11px;outline:none;transition:border-color .15s;cursor:pointer}
+select.sel:focus{border-color:rgba(245,158,11,.5)}
+#method-sel{color:#f59e0b;font-weight:700}
+.slider-row{margin-top:4px}
+.slider-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.slider-label{font-size:11px;font-weight:600;color:#9ca3af}
+.slider-val{font-size:11px;font-family:'JetBrains Mono',monospace;color:#f59e0b;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2);padding:2px 8px;border-radius:5px}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:3px;background:#1c1c22;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#f59e0b;box-shadow:0 0 8px #f59e0b;cursor:pointer}
+.slider-hints{display:flex;justify-content:space-between;font-size:9px;color:#4b5563;font-weight:600;text-transform:uppercase;margin-top:5px}
+#btn-start{width:100%;padding:14px;border-radius:12px;border:none;cursor:pointer;font-weight:700;font-size:13px;letter-spacing:.06em;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .2s;font-family:'Outfit',sans-serif;margin-top:4px}
+#btn-start svg{width:16px;height:16px}
+#btn-start.running{background:#ef4444;color:#fff;box-shadow:0 4px 20px rgba(239,68,68,.3)}
+#btn-start.stopped{color:#070709;box-shadow:0 4px 20px rgba(245,158,11,.2)}
+#btn-start.stopped:hover{box-shadow:0 4px 28px rgba(245,158,11,.35)}
+
+/* right side */
+#right-col{display:flex;flex-direction:column;gap:20px}
+
+/* stats */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.stat-card{border-radius:18px;padding:18px}
+.stat-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.stat-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6b7280}
+.stat-icon{width:28px;height:28px;border-radius:8px;background:#111114;border:1px solid #1c1c22;display:flex;align-items:center;justify-content:center;color:#6b7280}
+.stat-icon svg{width:14px;height:14px}
+.stat-value{font-size:28px;font-weight:700;font-family:'Outfit',sans-serif;color:#f3f4f6;line-height:1}
+.stat-sub{font-size:10px;color:#6b7280;font-weight:600;margin-top:5px}
+.stat-sub span{color:#f59e0b}
+#stat-status-val{font-size:22px;color:#6b7280;text-transform:uppercase}
+.progress-thin{height:4px;background:#111114;border-radius:2px;margin-top:10px;overflow:hidden}
+.progress-thin-fill{height:100%;border-radius:2px;transition:width .3s;width:0%}
+
+/* chart panel */
+#chart-panel{border-radius:24px;padding:24px;flex:1}
+.chart-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.chart-legend{display:flex;align-items:center;gap:7px;font-size:10px;font-weight:700;color:#9ca3af;letter-spacing:.1em;text-transform:uppercase}
+.chart-legend-dot{width:10px;height:10px;border-radius:3px;background:#f59e0b}
+#chart-wrap{position:relative;height:200px}
+#chart-overlay{position:absolute;inset:0;background:rgba(7,7,9,.82);backdrop-filter:blur(4px);border-radius:14px;border:1px solid rgba(255,255,255,.04);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;transition:opacity .3s;z-index:5}
+#chart-overlay.hidden-overlay{opacity:0;pointer-events:none}
+.overlay-icon{width:48px;height:48px;border-radius:14px;background:#111114;border:1px solid #1c1c22;display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+.overlay-icon svg{width:22px;height:22px;color:#f59e0b}
+.overlay-title{font-size:13px;font-weight:700;font-family:'Outfit',sans-serif;color:#f3f4f6}
+.overlay-sub{font-size:11px;color:#6b7280;margin-top:4px;max-width:240px}
+
+/* logs panel */
+#logs-panel{border-radius:24px;padding:24px}
+.logs-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+.logs-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.filter-label{font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.08em}
+.sm-select{font-size:11px;font-weight:600;padding:5px 10px;border-radius:8px;border:1px solid #1c1c22;background:#111114;color:#d1d5db;outline:none;cursor:pointer}
+.sm-btn{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:5px 12px;border-radius:8px;cursor:pointer;transition:all .15s;border:1px solid}
+.sm-btn svg{width:13px;height:13px}
+.sm-btn-amber{color:#f59e0b;background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.2)}
+.sm-btn-amber:hover{background:rgba(245,158,11,.18);border-color:rgba(245,158,11,.4)}
+.sm-btn-ghost{color:#6b7280;background:rgba(15,15,19,.3);border-color:#1c1c22}
+.sm-btn-ghost:hover{color:#d1d5db;border-color:#2a2a32}
+.logs-divider{width:1px;height:16px;background:#1c1c22}
+.table-wrap{border:1px solid #111114;border-radius:14px;overflow:hidden}
+table{width:100%;border-collapse:collapse}
+thead tr{background:rgba(15,15,19,.25);border-bottom:1px solid #111114}
+th{padding:12px 20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#6b7280;text-align:left;font-family:'Outfit',sans-serif}
+#logs-tbody tr{border-bottom:1px solid rgba(17,17,20,.6);cursor:pointer;transition:background .1s}
+#logs-tbody tr:hover{background:rgba(245,158,11,.025)}
+#logs-tbody td{padding:12px 20px;font-size:11px}
+.empty-row td{text-align:center;padding:44px 20px;color:#4b5563;font-size:13px;font-family:'Plus Jakarta Sans',sans-serif}
+.code-badge{display:inline-block;padding:2px 8px;border-radius:5px;font-size:10px;font-weight:700;border:1px solid}
+.badge-200{color:#22c55e;background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.2)}
+.badge-400{color:#fb923c;background:rgba(251,146,60,.1);border-color:rgba(251,146,60,.2)}
+.badge-422{color:#eab308;background:rgba(234,179,8,.1);border-color:rgba(234,179,8,.2)}
+.badge-408{color:#f87171;background:rgba(248,113,113,.1);border-color:rgba(248,113,113,.2)}
+.badge-500{color:#ef4444;background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.2)}
+.err-tag{font-size:9px;font-weight:700;color:#ef4444;text-transform:uppercase;letter-spacing:.05em;margin-left:8px;white-space:nowrap}
+
+/* ─── DIFF DRAWER ─── */
+#diff-drawer{position:fixed;top:0;right:-580px;width:560px;height:100vh;background:#070709;border-left:1px solid #111114;box-shadow:-12px 0 40px rgba(0,0,0,.6);z-index:100;display:flex;flex-direction:column;padding:24px;transition:right .3s cubic-bezier(.4,0,.2,1);overflow-y:auto}
+#diff-drawer.open{right:0}
+.drawer-head{display:flex;justify-content:space-between;align-items:center;padding-bottom:16px;border-bottom:1px solid #111114;margin-bottom:20px}
+.drawer-title-row{display:flex;align-items:center;gap:10px}
+.drawer-icon{width:28px;height:28px;border-radius:7px;background:rgba(245,158,11,.1);display:flex;align-items:center;justify-content:center;color:#f59e0b}
+.drawer-icon svg{width:15px;height:15px}
+.close-btn{width:28px;height:28px;border-radius:8px;background:#111114;border:1px solid #1c1c22;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#6b7280;transition:all .15s}
+.close-btn:hover{color:#f3f4f6;border-color:#2a2a32}
+.close-btn svg{width:14px;height:14px}
+.diff-meta{background:rgba(15,15,19,.5);border:1px solid #1c1c22;border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.diff-meta-method{font-weight:700;font-size:12px;color:#f59e0b;margin-right:6px}
+.diff-meta-endpoint{font-size:11px;font-family:'JetBrains Mono',monospace;color:#9ca3af}
+.diff-meta-strategy{font-size:11px;color:#6b7280;font-weight:600;margin-top:3px}
+.diff-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;height:280px;margin-bottom:14px}
+.diff-col-head{font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;text-align:center}
+.diff-box{border-radius:10px;padding:12px;font-family:'JetBrains Mono',monospace;font-size:10px;overflow-y:auto;white-space:pre-wrap;border:1px dashed}
+.diff-box-green{color:#4ade80;background:rgba(34,197,94,.02);border-color:rgba(34,197,94,.12)}
+.diff-box-red{color:#f87171;background:rgba(239,68,68,.02);border-color:rgba(239,68,68,.12)}
+.diff-hint{background:rgba(245,158,11,.03);border:1px solid rgba(245,158,11,.1);border-radius:10px;padding:12px 14px;font-size:10px;color:#6b7280;line-height:1.6;display:flex;gap:8px;margin-bottom:16px}
+.diff-hint svg{width:14px;height:14px;color:#f59e0b;flex-shrink:0;margin-top:1px}
+.drawer-footer{margin-top:auto;padding-top:14px;border-top:1px solid #111114;display:flex;justify-content:flex-end}
+
+/* ─── REPORT MODAL ─── */
+#report-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+#report-backdrop.open{opacity:1;pointer-events:all}
+#report-modal{width:500px;border-radius:24px;padding:24px;display:flex;flex-direction:column;gap:20px;transform:scale(.95);transition:transform .25s;position:relative}
+#report-backdrop.open #report-modal{transform:scale(1)}
+.modal-close{position:absolute;top:20px;right:20px}
+.rep-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.rep-card{background:rgba(15,15,19,.5);border:1px solid #1c1c22;border-radius:12px;padding:12px;text-align:center}
+.rep-card-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#6b7280;margin-bottom:4px}
+.rep-card-val{font-size:22px;font-weight:700;font-family:'Outfit',sans-serif}
+.rep-row{background:rgba(15,15,19,.1);border:1px solid #111114;border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;font-size:12px}
+.rep-row-label{color:#9ca3af}
+.rep-row-val{font-family:'JetBrains Mono',monospace;font-weight:700;color:#6b7280;background:#111114;padding:2px 8px;border-radius:4px;font-size:11px}
+.modal-footer{padding-top:14px;border-top:1px solid #111114;display:flex;justify-content:flex-end}
+
+/* ─── COMMAND CENTRE ─── */
+#page-cmdcentre{font-family:'JetBrains Mono',monospace}
+.cmd-intro{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px}
+.cmd-intro-text h2{font-size:20px;font-weight:700;color:#f3f4f6;font-family:'Outfit',sans-serif}
+.cmd-intro-text p{font-size:12px;color:#6b7280;margin-top:4px}
+.cmd-live-badge{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#c084fc;background:rgba(192,132,252,.1);border:1px solid rgba(192,132,252,.3);padding:5px 12px;border-radius:8px}
+.cmd-panel{background:#0d0d0f;border:1px solid rgba(200,50,255,.3);border-radius:12px;overflow:hidden;box-shadow:0 0 40px rgba(200,50,255,.06),0 8px 32px rgba(0,0,0,.5)}
+.cmd-titlebar{background:rgba(255,255,255,.02);border-bottom:1px solid rgba(200,50,255,.2);padding:9px 20px;display:flex;align-items:center;justify-content:center;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:rgba(200,50,255,.6);font-weight:600}
+.cmd-titlebar::before,.cmd-titlebar::after{content:'';flex:1;height:1px;background:rgba(200,50,255,.25)}
+.cmd-titlebar span{margin:0 14px;white-space:nowrap}
+.cmd-header{padding:12px 20px;border-bottom:1px solid rgba(255,255,255,.04);display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px}
+.cmd-engine{font-weight:700;font-size:12px;line-height:1.7}
+.zap{color:#f59e0b}.cname{color:#00d4d4}.csep{color:#6b7280;margin:0 6px}.curl{color:#00cc44}
+.cmd-right{font-size:11px;color:#6b7280}.cmd-mv{color:#00d4d4;font-weight:700}.cmd-sv{color:#00cc44;font-weight:700}
+.cmd-body{display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:16px 20px}
+.cmd-section-title{font-size:11px;font-weight:600;color:#c9d1d9;margin-bottom:10px;letter-spacing:.04em}
+.cmd-table{width:100%;border-collapse:collapse;font-size:11.5px}
+.cmd-table th{text-align:left;padding:6px 10px;color:#00d4d4;font-weight:700;border:1px solid rgba(0,212,212,.14);background:rgba(0,212,212,.03);font-size:11px;letter-spacing:.04em}
+.cmd-table td{padding:5px 10px;border:1px solid rgba(255,255,255,.05);color:#c9d1d9}
+.cmd-table .num{text-align:right;font-weight:700}.cmd-table .pct{text-align:right;color:#6b7280}
+.c-success{color:#00cc44!important}.c-client{color:#f5c518!important}.c-server{color:#ff4444!important}.c-timeout{color:#cc44ff!important}.c-zero{color:#6b7280!important}
+.hist-table{width:100%;border-collapse:collapse;font-size:11px}
+.hist-table th{text-align:left;padding:6px 10px;color:#00d4d4;font-weight:700;border:1px solid rgba(0,212,212,.14);background:rgba(0,212,212,.03);font-size:11px}
+.hist-table td{padding:4px 10px;border:1px solid rgba(255,255,255,.05);color:#c9d1d9;vertical-align:middle}
+.hist-wrap{display:flex;align-items:center;gap:8px;min-width:130px}
+.hist-bar{height:12px;border-radius:2px;width:0%;transition:width .5s ease;min-width:0}
+.bar0{background:#22c55e}.bar1{background:#84cc16}.bar2{background:#eab308}.bar3{background:#f97316}.bar4{background:#ef4444}.bar5{background:#ef4444;opacity:.7}.bar6{background:#991b1b}
+.hist-count{color:#6b7280;font-size:10px;white-space:nowrap;min-width:28px}
+.lat-grid{display:grid;grid-template-columns:1fr 1fr;border:1px solid rgba(255,255,255,.06);border-radius:6px;overflow:hidden;margin-top:14px}
+.lat-label,.lat-val{padding:7px 12px;font-size:11.5px;border-bottom:1px solid rgba(255,255,255,.05)}
+.lat-label{color:#c9d1d9}.lat-val{text-align:right;font-weight:700}
+.lat-last{border-bottom:none!important}
+.lat-min{color:#00cc44}.lat-max{color:#ff4444}.lat-avg{color:#f5c518}.lat-p95{color:#ff4444}
+.cmd-progress{padding:13px 20px;border-top:1px solid rgba(255,255,255,.04);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.cmd-prog-label{font-size:12px;font-weight:600;color:#c9d1d9;white-space:nowrap}
+.cmd-prog-track{flex:1;height:14px;border:1px solid rgba(0,204,68,.28);border-radius:2px;background:rgba(0,204,68,.04);overflow:hidden;min-width:100px}
+.cmd-prog-fill{height:100%;width:0%;transition:width .4s ease;background:repeating-linear-gradient(90deg,#00cc44 0,#00cc44 6px,rgba(0,204,68,.5) 6px,rgba(0,204,68,.5) 8px)}
+.cmd-prog-text{font-size:12px;font-weight:700;color:#00cc44;white-space:nowrap}
+.cmd-logs{padding:10px 20px 14px;border-top:1px solid rgba(255,255,255,.04);max-height:110px;overflow-y:auto;display:flex;flex-direction:column-reverse;gap:2px;font-size:10.5px}
+.log-entry{line-height:1.5}.log-ts{color:#6b7280}.log-info{color:#00cc44;font-weight:700}.log-err{color:#ff4444;font-weight:700}.log-warn{color:#f5c518;font-weight:700}.log-msg{color:#c9d1d9}.log-pay{color:#6b7280}
+.cmd-summary{margin:14px 20px;border:1px solid rgba(255,60,60,.38);border-radius:6px;padding:14px 18px;background:rgba(255,0,0,.015);display:none;font-size:12px}
+.cmd-summary.show{display:block}
+.cmd-sum-title{text-align:center;color:rgba(255,80,80,.65);font-weight:700;letter-spacing:.1em;margin-bottom:12px}
+.sum-line{color:#c9d1d9;margin-bottom:3px;line-height:1.7}
+.sv-w{color:#fff;font-weight:700}.sv-g{color:#00cc44;font-weight:700}.sv-y{color:#f5c518;font-weight:700}.sv-r{color:#ff4444;font-weight:700}.sv-m{color:#cc44ff;font-weight:700}.sv-c{color:#00d4d4;font-weight:700}
+
+/* history + settings pages */
+.page-section{border-radius:24px;padding:32px;max-width:800px;margin:0 auto}
+.section-head{display:flex;align-items:center;gap:12px;margin-bottom:24px}
+.section-icon{width:36px;height:36px;border-radius:10px;background:rgba(245,158,11,.1);display:flex;align-items:center;justify-content:center;color:#f59e0b}
+.section-icon svg{width:18px;height:18px}
+.section-title{font-size:17px;font-weight:700;font-family:'Outfit',sans-serif}
+.section-sub{font-size:11px;color:#6b7280;font-weight:600;margin-top:2px}
+.hist-item{border:1px solid #111114;background:rgba(15,15,19,.1);border-radius:16px;padding:18px 20px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;transition:border-color .15s}
+.hist-item:hover{border-color:#1c1c22}
+.hist-badge{font-size:10px;font-family:'JetBrains Mono',monospace;font-weight:700;padding:2px 8px;border-radius:4px;margin-bottom:5px;display:inline-block}
+.badge-session-gold{color:#f59e0b;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2)}
+.badge-session-gray{color:#6b7280;background:#111114;border:1px solid #1c1c22}
+.hist-item-url{font-size:13px;font-weight:700;color:#f3f4f6;margin:3px 0}
+.hist-item-meta{font-size:11px;color:#6b7280;display:flex;gap:8px;align-items:center}
+.settings-row{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:18px}
+.settings-field label{font-size:11px;font-weight:600;color:#9ca3af;display:block;margin-bottom:6px}
+.settings-check{background:rgba(245,158,11,.04);border:1px solid rgba(245,158,11,.1);border-radius:14px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.settings-check-title{font-size:12px;font-weight:700;color:#f59e0b}
+.settings-check-sub{font-size:10px;color:#6b7280;margin-top:2px}
+.save-btn{padding:11px 24px;border-radius:12px;border:none;cursor:pointer;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#070709;font-family:'Outfit',sans-serif}
+
+/* decorative glows */
+.glow-tl{position:fixed;top:0;left:30%;width:600px;height:600px;pointer-events:none;z-index:0;background:radial-gradient(circle,rgba(245,158,11,.04),transparent 70%)}
+.glow-br{position:fixed;bottom:0;right:10%;width:500px;height:500px;pointer-events:none;z-index:0;background:radial-gradient(circle,rgba(245,158,11,.03),transparent 70%)}
+
+/* inline SVG helpers */
+svg.icon{display:inline-block;vertical-align:middle}
+</style>
 </head>
-<body class="bg-zinc-950 text-gray-200 antialiased font-body relative min-h-screen flex overflow-x-hidden">
+<body>
+<div class="glow-tl"></div>
+<div class="glow-br"></div>
 
-  <!-- Background Decorative Glowing Lights (matching image aesthetic) -->
-  <div class="radial-glow-top"></div>
-  <div class="radial-glow-bottom"></div>
-
-  <!-- Sidebar Navigation -->
-  <aside class="w-64 border-r border-zinc-900 bg-zinc-950/80 backdrop-blur-md flex flex-col justify-between shrink-0 z-10">
-    <div class="p-6">
-      <!-- Logo / Branding -->
-      <div class="flex items-center space-x-3 mb-10">
-        <div class="w-9 h-9 rounded-lg gold-gradient-bg flex items-center justify-center shadow-lg shadow-amber-500/20">
-          <i data-lucide="zap" class="text-zinc-950 w-5 h-5 stroke-[2.5]"></i>
-        </div>
-        <div>
-          <span class="text-lg font-bold font-title tracking-wider gold-gradient-text">FUZZSHIELD</span>
-          <p class="text-[10px] text-zinc-500 font-semibold tracking-widest uppercase">API SRE Engine</p>
-        </div>
+<!-- ═══════════ SIDEBAR ═══════════ -->
+<div id="sidebar">
+  <div id="sidebar-top">
+    <div class="logo-box">
+      <div class="logo-icon gold-bg">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
       </div>
-
-      <!-- Navigation Links -->
-      <nav class="space-y-1.5">
-        <a href="#" id="nav-dashboard" class="flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 bg-amber-500/10 text-amber-500 border border-amber-500/20 shadow-lg shadow-amber-500/5">
-          <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
-          <span class="text-sm font-medium">Dashboard</span>
-        </a>
-        <a href="#" id="nav-history" class="flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 text-zinc-400 hover:text-gray-200 hover:bg-zinc-900/50 border border-transparent">
-          <i data-lucide="history" class="w-5 h-5"></i>
-          <span class="text-sm font-medium">Fuzzing History</span>
-        </a>
-        <a href="#" id="nav-settings" class="flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 text-zinc-400 hover:text-gray-200 hover:bg-zinc-900/50 border border-transparent">
-          <i data-lucide="sliders" class="w-5 h-5"></i>
-          <span class="text-sm font-medium">Engine Config</span>
-        </a>
-      </nav>
-    </div>
-
-    <!-- Sidebar Footer -->
-    <div class="p-6 border-t border-zinc-900">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center space-x-3">
-          <div class="w-10 h-10 rounded-full border border-zinc-800 bg-zinc-900 flex items-center justify-center font-bold text-amber-500 font-title">
-            S
-          </div>
-          <div>
-            <p class="text-xs font-semibold text-gray-200">Sanjay Dev</p>
-            <p class="text-[10px] text-zinc-500 font-medium">Senior Security Eng</p>
-          </div>
-        </div>
-        <button class="text-zinc-500 hover:text-red-400 transition-colors" title="Logout">
-          <i data-lucide="log-out" class="w-4 h-4"></i>
-        </button>
+      <div>
+        <div class="logo-name gold-text">FUZZSHIELD</div>
+        <div class="logo-sub">API SRE Engine</div>
       </div>
     </div>
-  </aside>
-
-  <!-- Main View Container -->
-  <main class="flex-1 flex flex-col min-w-0 z-10 overflow-y-auto max-h-screen">
-    
-    <!-- Top Header -->
-    <header class="h-16 border-b border-zinc-900 px-8 flex items-center justify-between shrink-0 bg-zinc-950/40 backdrop-blur-md">
-      <div class="flex items-center space-x-4">
-        <h1 id="page-title" class="text-lg font-bold font-title tracking-tight">API Fuzzing Dashboard</h1>
-        <div class="h-4 w-px bg-zinc-800"></div>
-        <span class="text-xs text-zinc-400 font-medium flex items-center space-x-1.5">
-          <span class="w-2 h-2 rounded-full status-dot-idle" id="header-status-dot"></span>
-          <span id="header-status-text">Engine Standby</span>
-        </span>
-      </div>
-      
-      <!-- Right Side Header Utility -->
-      <div class="flex items-center space-x-4">
-        <!-- Interactive Report Summary Trigger -->
-        <button id="btn-report-summary" class="h-8 px-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs font-bold text-amber-500 hover:bg-amber-500/20 transition-all flex items-center space-x-1.5 shadow-lg shadow-amber-500/5">
-          <i data-lucide="file-bar-chart-2" class="w-3.5 h-3.5"></i>
-          <span>Report Summary</span>
-        </button>
-
-        <div class="h-4 w-px bg-zinc-800"></div>
-
-        <span class="text-xs font-mono font-semibold px-2.5 py-1 bg-zinc-900 rounded-lg border border-zinc-800 text-zinc-400">
-          concurrency_max: 500
-        </span>
-        <button class="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center hover:border-zinc-700 transition-colors text-zinc-400 hover:text-gray-200">
-          <i data-lucide="bell" class="w-4 h-4"></i>
-        </button>
-      </div>
-    </header>
-
-    <!-- Page Content Slot -->
-    <div id="content-slot" class="p-8 space-y-8 flex-1">
-      
-      <!-- ================== DASHBOARD PAGE ================== -->
-      <div id="page-dashboard" class="space-y-8">
-        
-        <!-- Primary Config & Status Overview Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
-          <!-- Control Panel Card (Left Side) -->
-          <div class="lg:col-span-4 glass-panel rounded-3xl p-6 flex flex-col justify-between">
-            <div>
-              <div class="flex items-center space-x-3 mb-6">
-                <div class="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500">
-                  <i data-lucide="terminal" class="w-4.5 h-4.5"></i>
-                </div>
-                <h2 class="text-sm font-bold font-title tracking-wide uppercase text-zinc-400">Fuzzer Control Panel</h2>
-              </div>
-              
-              <div class="space-y-5">
-                <!-- Target Endpoint URL -->
-                <div class="space-y-2">
-                  <label class="text-xs font-semibold text-zinc-400 flex justify-between">
-                    <span>Target API Endpoint</span>
-                    <span class="text-amber-500/80 font-medium">validation active</span>
-                  </label>
-                  <div class="relative">
-                    <input type="text" id="target-url" value="http://127.0.0.1:8000/api/users" placeholder="https://api.yourdomain.com/endpoint" class="w-full pl-3 pr-10 py-3 rounded-xl bg-zinc-900/60 border border-zinc-800 text-sm focus:outline-none focus:border-amber-500/50 transition-colors placeholder-zinc-600 font-mono text-xs">
-                    <i data-lucide="link-2" class="w-4 h-4 absolute right-3 top-3.5 text-zinc-600"></i>
-                  </div>
-                </div>
-
-                <!-- Request Method & Template Section -->
-                <div class="grid grid-cols-3 gap-3">
-                  <div class="space-y-2 col-span-1">
-                    <label class="text-xs font-semibold text-zinc-400">Method</label>
-                    <select id="request-method" class="w-full px-3 py-3 rounded-xl bg-zinc-900/60 border border-zinc-800 text-xs focus:outline-none focus:border-amber-500/50 font-bold text-amber-500">
-                      <option value="POST">POST</option>
-                      <option value="PUT">PUT</option>
-                      <option value="GET">GET</option>
-                      <option value="DELETE">DELETE</option>
-                    </select>
-                  </div>
-                  
-                  <div class="space-y-2 col-span-2">
-                    <label class="text-xs font-semibold text-zinc-400">JSON template payload</label>
-                    <select id="payload-template" class="w-full px-3 py-3 rounded-xl bg-zinc-900/60 border border-zinc-800 text-xs focus:outline-none focus:border-amber-500/50 text-gray-300 font-medium">
-                      <option value="users">User Profile Schema</option>
-                      <option value="payments">Payment Transaction</option>
-                      <option value="inventory">Product Inventory Item</option>
-                      <option value="search">Raw Query parameters</option>
-                    </select>
-                  </div>
-                </div>
-
-                <!-- Concurrency Slider -->
-                <div class="space-y-3 pt-2">
-                  <div class="flex justify-between items-center text-xs font-semibold">
-                    <span class="text-zinc-400">Concurrency (Semaphore)</span>
-                    <span id="concurrency-display" class="font-mono text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">25 threads</span>
-                  </div>
-                  <input type="range" id="concurrency-slider" min="5" max="150" value="25" class="w-full h-1.5 rounded-lg bg-zinc-800 appearance-none cursor-pointer accent-amber-500">
-                  <div class="flex justify-between text-[10px] text-zinc-600 font-semibold uppercase">
-                    <span>Low impact</span>
-                    <span>Aggressive fuzzing</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Start button -->
-            <div class="pt-6">
-              <button id="btn-start" class="w-full py-4 rounded-xl gold-gradient-bg text-zinc-950 font-bold text-sm tracking-wider flex items-center justify-center space-x-2 shadow-lg shadow-amber-500/15 hover:shadow-amber-500/25 transition-all duration-300 transform active:scale-[0.98]">
-                <i data-lucide="play" class="w-4 h-4 fill-zinc-950"></i>
-                <span>START FUZZING TEST</span>
-              </button>
-            </div>
-          </div>
-<div class="mt-4 mb-2">
-  <select id="logFilter" onchange="filterLogs()" class="bg-zinc-900 text-zinc-300 border border-zinc-700 px-3 py-1 rounded-md text-sm">
-    <option value="all">Show All Logs</option>
-    <option value="interesting">Interesting Only (403, 429, 500)</option>
-  </select>
+    <nav>
+      <a class="nav-link active-amber" id="nav-dashboard" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </a>
+      <a class="nav-link" id="nav-cmdcentre" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+        Command Centre
+      </a>
+      <a class="nav-link" id="nav-history" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><polyline points="12 7 12 12 16 14"/></svg>
+        Fuzzing History
+      </a>
+      <a class="nav-link" id="nav-settings" href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="20" y2="12"/><line x1="12" y1="18" x2="20" y2="18"/></svg>
+        Engine Config
+      </a>
+    </nav>
+  </div>
+  <div id="sidebar-footer">
+    <div class="avatar">S</div>
+    <div style="flex:1">
+      <div class="avatar-name">Sanjay Dev</div>
+      <div class="avatar-role">Senior Security Eng</div>
+    </div>
+    <div style="color:#6b7280;cursor:pointer" title="Logout">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    </div>
+  </div>
 </div>
-          <!-- Real-time Stats Grid & System Info (Right Side) -->
-          <div class="lg:col-span-8 flex flex-col space-y-6">
-            
-            <!-- Real-time Stats Grid: 4 Premium Cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              <!-- Stats 1: Total Requests -->
-              <div class="glass-panel rounded-2xl p-5 relative overflow-hidden group">
-                <div class="flex justify-between items-start mb-3">
-                  <span class="text-xs font-semibold tracking-wider text-zinc-500 uppercase">Total Requests</span>
-                  <div class="w-7 h-7 rounded-lg bg-zinc-900 border border-zinc-800/80 flex items-center justify-center text-zinc-400 group-hover:text-amber-500 transition-colors">
-                    <i data-lucide="activity" class="w-3.5 h-3.5"></i>
-                  </div>
-                </div>
-                <div class="space-y-1">
-                  <h3 id="stat-total" class="text-3xl font-bold font-title tracking-tight font-mono text-gray-100">0</h3>
-                  <p class="text-[10px] font-semibold text-zinc-500 flex items-center space-x-1">
-                    <span class="text-amber-500" id="stat-rate">0 req/s</span>
-                    <span>throughput</span>
-                  </p>
-                </div>
-              </div>
 
-              <!-- Stats 2: Failed Requests -->
-              <div class="glass-panel rounded-2xl p-5 relative overflow-hidden group">
-                <div class="flex justify-between items-start mb-3">
-                  <span class="text-xs font-semibold tracking-wider text-zinc-500 uppercase">Failed Requests</span>
-                  <div class="w-7 h-7 rounded-lg bg-zinc-900 border border-zinc-800/80 flex items-center justify-center text-zinc-400 group-hover:text-red-500 transition-colors">
-                    <i data-lucide="shield-alert" class="w-3.5 h-3.5"></i>
-                  </div>
-                </div>
-                <div class="space-y-1">
-                  <h3 id="stat-failed" class="text-3xl font-bold font-title tracking-tight font-mono text-gray-100">0</h3>
-                  <p class="text-[10px] font-semibold text-zinc-500 flex items-center space-x-1">
-                    <span class="text-red-400" id="stat-fail-pct">0.0%</span>
-                    <span>crash/timeout rate</span>
-                  </p>
-                </div>
-              </div>
+<!-- ═══════════ MAIN ═══════════ -->
+<div id="main">
 
-              <!-- Stats 3: Average Latency -->
-              <div class="glass-panel rounded-2xl p-5 relative overflow-hidden group">
-                <div class="flex justify-between items-start mb-3">
-                  <span class="text-xs font-semibold tracking-wider text-zinc-500 uppercase">Avg Latency</span>
-                  <div class="w-7 h-7 rounded-lg bg-zinc-900 border border-zinc-800/80 flex items-center justify-center text-zinc-400 group-hover:text-orange-500 transition-colors">
-                    <i data-lucide="gauge" class="w-3.5 h-3.5"></i>
-                  </div>
-                </div>
-                <div class="space-y-1">
-                  <h3 id="stat-latency" class="text-3xl font-bold font-title tracking-tight font-mono text-gray-100">0.0 ms</h3>
-                  <p class="text-[10px] font-semibold text-zinc-500 flex items-center space-x-1">
-                    <span class="text-orange-400" id="stat-latency-p95">0.0 ms</span>
-                    <span>95th percentile</span>
-                  </p>
-                </div>
-              </div>
+  <!-- Topbar -->
+  <div id="topbar">
+    <div id="topbar-left">
+      <div id="page-title">API Fuzzing Dashboard</div>
+      <div class="divider"></div>
+      <div class="status-pill">
+        <span class="dot-idle" id="status-dot"></span>
+        <span id="status-text">Engine Standby</span>
+      </div>
+    </div>
+    <div id="topbar-right">
+      <button class="top-btn" id="btn-report">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><rect x="2" y="20" width="20" height="1"/></svg>
+        Report Summary
+      </button>
+      <div class="divider"></div>
+      <div class="top-tag">concurrency_max: 500</div>
+      <div class="icon-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      </div>
+    </div>
+  </div>
 
-              <!-- Stats 4: Status / Progress -->
-              <div class="glass-panel rounded-2xl p-5 relative overflow-hidden group">
-                <div class="flex justify-between items-start mb-3">
-                  <span class="text-xs font-semibold tracking-wider text-zinc-500 uppercase">Engine Status</span>
-                  <div class="w-7 h-7 rounded-lg bg-zinc-900 border border-zinc-800/80 flex items-center justify-center text-zinc-400 group-hover:text-green-500 transition-colors">
-                    <i data-lucide="cpu" class="w-3.5 h-3.5"></i>
-                  </div>
-                </div>
-                <div class="space-y-1">
-                  <h3 id="stat-status" class="text-3xl font-bold font-title tracking-tight text-zinc-500 uppercase">STANDBY</h3>
-                  <!-- Progress mini-bar -->
-                  <div class="w-full bg-zinc-900 h-1 rounded overflow-hidden mt-2 border border-zinc-800/40">
-                    <div id="stat-progress-bar" class="w-0 h-full gold-gradient-bg transition-all duration-300"></div>
-                  </div>
-                </div>
+  <!-- Pages -->
+  <div id="page-container">
+
+    <!-- ═══ DASHBOARD PAGE ═══ -->
+    <div id="page-dashboard" class="page active">
+
+      <div class="dash-grid">
+
+        <!-- Control Panel -->
+        <div id="control-panel" class="glass">
+          <div>
+            <div class="panel-header">
+              <div class="panel-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
               </div>
+              <div class="panel-title">Fuzzer Control Panel</div>
             </div>
 
-            <!-- Latency vs Time Chart View -->
-            <div class="glass-panel rounded-3xl p-6 flex-1 flex flex-col justify-between">
-              <div class="flex justify-between items-center mb-6">
-                <div class="flex items-center space-x-3">
-                  <div class="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500">
-                    <i data-lucide="line-chart" class="w-4.5 h-4.5"></i>
-                  </div>
-                  <div>
-                    <h2 class="text-sm font-bold font-title tracking-wide uppercase text-zinc-400">Response Latency Distribution</h2>
-                    <p class="text-[10px] text-zinc-500 font-semibold tracking-wide">Real-time latency fluctuation stream</p>
-                  </div>
-                </div>
-                <div class="flex items-center space-x-2">
-                  <span class="inline-block w-2.5 h-2.5 rounded bg-amber-500"></span>
-                  <span class="text-[10px] font-semibold text-zinc-400 uppercase tracking-widest">TTFB (ms)</span>
-                </div>
-              </div>
-
-              <!-- Line Chart Container -->
-              <div class="h-64 relative flex items-center justify-center w-full">
-                <!-- If fuzzer is idle, show a premium overlay -->
-                <div id="chart-overlay" class="absolute inset-0 bg-zinc-950/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center rounded-2xl border border-zinc-900/60 p-6 text-center transition-all duration-300 animate-fade-in">
-                  <div class="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-3">
-                    <i data-lucide="play" class="w-5 h-5 text-amber-500 animate-pulse"></i>
-                  </div>
-                  <h3 class="text-sm font-bold font-title text-gray-200">Awaiting Real-time Fuzz Stream</h3>
-                  <p class="text-xs text-zinc-500 max-w-sm mt-1">Configure your endpoint URL and press start to ingest active fuzzed latency metrics</p>
-                </div>
-                <!-- Canvas for Chart.js -->
-                <canvas id="latency-chart" class="w-full h-full"></canvas>
-              </div>
+            <!-- URL -->
+            <div style="margin-bottom:14px">
+              <label class="field-label">Target API Endpoint <span class="hint">validation active</span></label>
+              <input id="target-url" class="text-input" type="text" value="http://127.0.0.1:8000/api/users">
             </div>
 
-          </div>
-        </div>
-
-        <!-- Recent Activity Logs Table Section -->
-        <div class="glass-panel rounded-3xl p-6">
-          <div class="flex justify-between items-center mb-6">
-            <div class="flex items-center space-x-3">
-              <div class="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500">
-                <i data-lucide="list-collapse" class="w-4.5 h-4.5"></i>
-              </div>
+            <!-- Method + Template -->
+            <div class="row-2" style="margin-bottom:14px">
               <div>
-                <h2 class="text-sm font-bold font-title tracking-wide uppercase text-zinc-400">Live Payload Activity Log</h2>
-                <p class="text-[10px] text-zinc-500 font-semibold tracking-wide">Fuzzed request anomalies stream (Click row for payload diff audit)</p>
-              </div>
-            </div>
-            
-            <!-- Quick filters & Data Intelligence + Export Tools -->
-            <div class="flex items-center space-x-3 z-20">
-              <!-- Dropdown filter -->
-              <div class="flex items-center space-x-2">
-                <label class="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Filter:</label>
-                <select id="filter-log-type" class="text-xs font-semibold px-3 py-1.5 rounded-lg border border-zinc-800 bg-zinc-900 focus:outline-none focus:border-amber-500/50 text-zinc-300">
-                  <option value="all">All Logs</option>
-                  <option value="interesting">Interesting Logs (403, 429, 500, 408)</option>
+                <label class="field-label" style="display:block;margin-bottom:6px">Method</label>
+                <select id="method-sel" class="sel">
+                  <option>POST</option><option>PUT</option><option>GET</option><option>DELETE</option>
                 </select>
               </div>
+              <div>
+                <label class="field-label" style="display:block;margin-bottom:6px">JSON Template</label>
+                <select class="sel">
+                  <option>User Profile Schema</option>
+                  <option>Payment Transaction</option>
+                  <option>Product Inventory</option>
+                  <option>Raw Query Params</option>
+                </select>
+              </div>
+            </div>
 
-              <!-- Export CSV Button -->
-              <button id="btn-export-csv" class="text-xs font-semibold px-3 py-1.5 rounded-lg border border-amber-500/20 hover:border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 transition-colors flex items-center space-x-1.5 shadow-lg shadow-amber-500/5">
-                <i data-lucide="download" class="w-3.5 h-3.5"></i>
-                <span>Export CSV</span>
-              </button>
-
-              <div class="w-px h-4 bg-zinc-850"></div>
-
-              <button id="btn-clear-logs" class="text-xs font-semibold px-3 py-1.5 rounded-lg border border-zinc-800 hover:border-zinc-700 bg-zinc-900/30 text-zinc-500 hover:text-gray-300 transition-colors flex items-center space-x-1.5">
-                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                <span>Clear</span>
-              </button>
+            <!-- Concurrency -->
+            <div class="slider-row">
+              <div class="slider-meta">
+                <span class="slider-label">Concurrency (Semaphore)</span>
+                <span class="slider-val" id="conc-display">25 threads</span>
+              </div>
+              <input type="range" id="conc-slider" min="5" max="150" value="25">
+              <div class="slider-hints"><span>Low impact</span><span>Aggressive</span></div>
             </div>
           </div>
 
-          <!-- Responsive Table Layout -->
-          <div class="overflow-x-auto border border-zinc-900 rounded-2xl relative">
-            <table class="w-full text-left border-collapse">
-              <thead>
-                <tr class="border-b border-zinc-900 bg-zinc-900/20 text-zinc-500 text-xs font-semibold font-title uppercase tracking-wider">
-                  <th class="px-6 py-4">Timestamp</th>
-                  <th class="px-6 py-4">Endpoint</th>
-                  <th class="px-6 py-4">Method</th>
-                  <th class="px-6 py-4">Response Code</th>
-                  <th class="px-6 py-4">Fuzzed Payload ID / Strategy</th>
-                </tr>
-              </thead>
-              <tbody id="logs-table-body" class="divide-y divide-zinc-900 text-xs font-mono select-none">
-                <!-- Fallback empty state -->
-                <tr id="table-empty-row">
-                  <td colspan="5" class="px-6 py-12 text-center text-zinc-600 font-sans font-medium">
-                    <i data-lucide="inbox" class="w-8 h-8 mx-auto mb-2 text-zinc-700"></i>
-                    No requests dispatched yet. Initiate fuzzing above.
-                  </td>
-                </tr>
+          <!-- Start Button -->
+          <button id="btn-start" class="stopped gold-bg">
+            <svg viewBox="0 0 24 24" fill="#070709" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            START FUZZING TEST
+          </button>
+        </div>
+
+        <!-- Right col: stats + chart -->
+        <div id="right-col">
+          <!-- Stats -->
+          <div class="stats-grid">
+            <div class="stat-card glass">
+              <div class="stat-card-top">
+                <div class="stat-label">Total Reqs</div>
+                <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+              </div>
+              <div class="stat-value" id="stat-total">0</div>
+              <div class="stat-sub"><span id="stat-rate">0 req/s</span> throughput</div>
+            </div>
+            <div class="stat-card glass">
+              <div class="stat-card-top">
+                <div class="stat-label">Failed</div>
+                <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg></div>
+              </div>
+              <div class="stat-value" id="stat-failed">0</div>
+              <div class="stat-sub"><span id="stat-fail-pct" style="color:#ef4444">0.0%</span> crash rate</div>
+            </div>
+            <div class="stat-card glass">
+              <div class="stat-card-top">
+                <div class="stat-label">Avg Latency</div>
+                <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+              </div>
+              <div class="stat-value" id="stat-latency">0 ms</div>
+              <div class="stat-sub"><span id="stat-p95" style="color:#fb923c">0.0 ms</span> p95</div>
+            </div>
+            <div class="stat-card glass">
+              <div class="stat-card-top">
+                <div class="stat-label">Status</div>
+                <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg></div>
+              </div>
+              <div class="stat-value" id="stat-status-val">STANDBY</div>
+              <div class="progress-thin"><div class="progress-thin-fill gold-bg" id="stat-prog-fill"></div></div>
+            </div>
+          </div>
+
+          <!-- Chart -->
+          <div id="chart-panel" class="glass">
+            <div class="chart-header">
+              <div class="panel-header" style="margin-bottom:0">
+                <div class="panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
+                <div>
+                  <div class="panel-title">Response Latency Distribution</div>
+                  <div style="font-size:10px;color:#6b7280;font-weight:600;margin-top:1px">Real-time TTFB stream</div>
+                </div>
+              </div>
+              <div class="chart-legend"><div class="chart-legend-dot"></div>TTFB (ms)</div>
+            </div>
+            <div id="chart-wrap">
+              <div id="chart-overlay">
+                <div class="overlay-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                </div>
+                <div class="overlay-title">Awaiting Real-time Fuzz Stream</div>
+                <div class="overlay-sub">Configure your endpoint and press Start to see live latency metrics</div>
+              </div>
+              <canvas id="latency-chart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Logs Panel -->
+      <div id="logs-panel" class="glass">
+        <div class="logs-header">
+          <div class="panel-header" style="margin-bottom:0">
+            <div class="panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></div>
+            <div>
+              <div class="panel-title">Live Payload Activity Log</div>
+              <div style="font-size:10px;color:#6b7280;font-weight:600;margin-top:1px">Click any row to view payload diff audit</div>
+            </div>
+          </div>
+          <div class="logs-actions">
+            <span class="filter-label">Filter:</span>
+            <select id="filter-log" class="sm-select">
+              <option value="all">All Logs</option>
+              <option value="interesting">Interesting (4xx/5xx)</option>
+            </select>
+            <button id="btn-export" class="sm-btn sm-btn-amber">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Export CSV
+            </button>
+            <div class="logs-divider"></div>
+            <button id="btn-clear" class="sm-btn sm-btn-ghost">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+              Clear
+            </button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Timestamp</th><th>Endpoint</th><th>Method</th><th>Response Code</th><th>Fuzzed Strategy</th>
+            </tr></thead>
+            <tbody id="logs-tbody">
+              <tr class="empty-row"><td colspan="5">No requests dispatched yet — start a fuzzing session above.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /page-dashboard -->
+
+
+    <!-- ═══ COMMAND CENTRE PAGE ═══ -->
+    <div id="page-cmdcentre" class="page">
+      <div class="cmd-intro">
+        <div class="cmd-intro-text">
+          <h2>Command Centre</h2>
+          <p>Live terminal mirror of your API Fuzzer engine — run a session from Dashboard first.</p>
+        </div>
+        <div class="cmd-live-badge">Live Mirror</div>
+      </div>
+
+      <div class="cmd-panel">
+        <div class="cmd-titlebar"><span>API FUZZER DASHBOARD</span></div>
+
+        <div class="cmd-header">
+          <div class="cmd-engine">
+            <span class="zap">⚡ API FUZZER ENGINE v1.0.0</span><span class="csep">|</span><span style="color:#6b7280">Target: </span><span class="curl" id="cmd-target">http://127.0.0.1:8000/api/users</span>
+          </div>
+          <div class="cmd-right">Method: <span class="cmd-mv" id="cmd-method">POST</span><span style="color:#6b7280"> | </span><span class="cmd-sv">Concurrency Safe</span></div>
+        </div>
+
+        <div class="cmd-body">
+          <!-- Status codes -->
+          <div>
+            <div class="cmd-section-title">Status Code Counts</div>
+            <table class="cmd-table">
+              <thead><tr><th>Metric</th><th style="text-align:right">Count</th><th style="text-align:right">Percentage</th></tr></thead>
+              <tbody>
+                <tr><td>Success (2xx)</td>     <td class="num c-success" id="cmd-s2xx">0</td><td class="pct" id="cmd-s2xx-p">0.0%</td></tr>
+                <tr><td>Redirects (3xx)</td>   <td class="num c-zero"   id="cmd-s3xx">0</td><td class="pct" id="cmd-s3xx-p">0.0%</td></tr>
+                <tr><td>Client Errors (4xx)</td><td class="num c-client" id="cmd-s4xx">0</td><td class="pct" id="cmd-s4xx-p">0.0%</td></tr>
+                <tr><td>Server Errors (5xx)</td><td class="num c-server" id="cmd-s5xx">0</td><td class="pct" id="cmd-s5xx-p">0.0%</td></tr>
+                <tr><td>Timeouts (TO)</td>     <td class="num c-timeout" id="cmd-sto">0</td> <td class="pct" id="cmd-sto-p">0.0%</td></tr>
+                <tr><td>Network Errors</td>    <td class="num c-zero"   id="cmd-sne">0</td> <td class="pct" id="cmd-sne-p">0.0%</td></tr>
+              </tbody>
+            </table>
+            <div class="lat-grid">
+              <div class="lat-label">Min TTFB</div>    <div class="lat-val lat-min" id="cmd-min">0.0 ms</div>
+              <div class="lat-label">Max TTFB</div>    <div class="lat-val lat-max" id="cmd-max">0.0 ms</div>
+              <div class="lat-label">Avg TTFB</div>    <div class="lat-val lat-avg" id="cmd-avg">0.0 ms</div>
+              <div class="lat-label lat-last">95th Pct</div><div class="lat-val lat-p95 lat-last" id="cmd-p95">0.0 ms</div>
+            </div>
+          </div>
+          <!-- Histogram -->
+          <div>
+            <div class="cmd-section-title">TTFB Latency Histogram</div>
+            <table class="hist-table">
+              <thead><tr><th>Range</th><th>Distribution</th></tr></thead>
+              <tbody>
+                <tr><td>&lt; 10ms</td>  <td><div class="hist-wrap"><div class="hist-bar bar0" id="h0"></div><span class="hist-count" id="hc0">(0)</span></div></td></tr>
+                <tr><td>10–50ms</td> <td><div class="hist-wrap"><div class="hist-bar bar1" id="h1"></div><span class="hist-count" id="hc1">(0)</span></div></td></tr>
+                <tr><td>50–100ms</td><td><div class="hist-wrap"><div class="hist-bar bar2" id="h2"></div><span class="hist-count" id="hc2">(0)</span></div></td></tr>
+                <tr><td>100–250ms</td><td><div class="hist-wrap"><div class="hist-bar bar3" id="h3"></div><span class="hist-count" id="hc3">(0)</span></div></td></tr>
+                <tr><td>250–500ms</td><td><div class="hist-wrap"><div class="hist-bar bar4" id="h4"></div><span class="hist-count" id="hc4">(0)</span></div></td></tr>
+                <tr><td>500ms–1s</td><td><div class="hist-wrap"><div class="hist-bar bar5" id="h5"></div><span class="hist-count" id="hc5">(0)</span></div></td></tr>
+                <tr><td>&gt; 1s</td>   <td><div class="hist-wrap"><div class="hist-bar bar6" id="h6"></div><span class="hist-count" id="hc6">(0)</span></div></td></tr>
               </tbody>
             </table>
           </div>
         </div>
 
-      </div>
-
-      <!-- ================== FUZZING HISTORY PAGE ================== -->
-      <div id="page-history" class="space-y-8 hidden">
-        <div class="glass-panel rounded-3xl p-8 max-w-4xl mx-auto space-y-6">
-          <div class="flex items-center space-x-3">
-            <div class="w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500">
-              <i data-lucide="history" class="w-5 h-5"></i>
-            </div>
-            <div>
-              <h2 class="text-lg font-bold font-title">Fuzzing Test History</h2>
-              <p class="text-xs text-zinc-500 font-semibold tracking-wide">Archived fuzzing session logs and vulnerability scans</p>
-            </div>
-          </div>
-          
-          <div class="space-y-4">
-            <!-- Simulated historical runs -->
-            <div class="border border-zinc-900 bg-zinc-900/10 rounded-2xl p-5 hover:border-zinc-800 transition-colors flex justify-between items-center">
-              <div class="space-y-1">
-                <span class="text-[10px] font-mono text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">SESSION_9A23FF</span>
-                <h4 class="text-sm font-bold text-gray-200">http://127.0.0.1:8000/api/users</h4>
-                <p class="text-xs text-zinc-500 flex items-center space-x-3">
-                  <span>31-May-2026 11:57</span>
-                  <span>•</span>
-                  <span>52 Requests</span>
-                  <span>•</span>
-                  <span class="text-red-400">7 Server Crashes</span>
-                </p>
-              </div>
-              <button class="px-4 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-xs font-semibold hover:border-zinc-700 transition-colors text-amber-500 flex items-center space-x-2">
-                <i data-lucide="download" class="w-3.5 h-3.5"></i>
-                <span>Export JSON</span>
-              </button>
-            </div>
-
-            <div class="border border-zinc-900 bg-zinc-900/10 rounded-2xl p-5 hover:border-zinc-800 transition-colors flex justify-between items-center">
-              <div class="space-y-1">
-                <span class="text-[10px] font-mono text-zinc-500 bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800">SESSION_5F12C0</span>
-                <h4 class="text-sm font-bold text-gray-200">https://api.yourdomain.com/v1/auth/login</h4>
-                <p class="text-xs text-zinc-500 flex items-center space-x-3">
-                  <span>30-May-2026 15:42</span>
-                  <span>•</span>
-                  <span>120 Requests</span>
-                  <span>•</span>
-                  <span class="text-green-400">0 Vulnerabilities Found</span>
-                </p>
-              </div>
-              <button class="px-4 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-xs font-semibold hover:border-zinc-700 transition-colors text-amber-500 flex items-center space-x-2">
-                <i data-lucide="download" class="w-3.5 h-3.5"></i>
-                <span>Export JSON</span>
-              </button>
-            </div>
-          </div>
+        <div class="cmd-progress">
+          <span class="cmd-prog-label">Progress:</span>
+          <div class="cmd-prog-track"><div class="cmd-prog-fill" id="cmd-prog-fill"></div></div>
+          <span class="cmd-prog-text" id="cmd-prog-text">0 / 52 (0.0%)</span>
+        </div>
+        <div class="cmd-logs" id="cmd-logs"></div>
+        <div class="cmd-summary" id="cmd-summary">
+          <div class="cmd-sum-title">── Fuzzing Session Complete Summary ──</div>
+          <div class="sum-line">Total Completed: <span class="sv-w" id="sum-total">0 / 52</span></div>
+          <div class="sum-line">Success (2xx): <span class="sv-g" id="sum-success">0</span></div>
+          <div class="sum-line">Client Errors (4xx): <span class="sv-y" id="sum-client">0</span></div>
+          <div class="sum-line">Server Errors (5xx): <span class="sv-r" id="sum-server">0</span></div>
+          <div class="sum-line">Timeouts / Failures: <span class="sv-m" id="sum-timeout">0</span></div>
+          <div style="height:6px"></div>
+          <div class="sum-line">Avg Latency &amp; 95th Pct: <span class="sv-w" id="sum-avg">0.0 ms | 95th: 0.0 ms</span></div>
+          <div class="sum-line">Fuzz results saved to: <span class="sv-c">fuzz_results.json</span></div>
         </div>
       </div>
 
-      <!-- ================== SETTINGS PAGE ================== -->
-      <div id="page-settings" class="space-y-8 hidden">
-        <div class="glass-panel rounded-3xl p-8 max-w-4xl mx-auto space-y-8">
-          <div class="flex items-center space-x-3">
-            <div class="w-9 h-9 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500">
-              <i data-lucide="sliders" class="w-5 h-5"></i>
-            </div>
-            <div>
-              <h2 class="text-lg font-bold font-title">Engine Configuration</h2>
-              <p class="text-xs text-zinc-500 font-semibold tracking-wide">Tune request parameters, HTTP headers, and timeout behaviors</p>
-            </div>
-          </div>
-
-          <div class="space-y-6">
-            <div class="grid grid-cols-2 gap-6">
-              <div class="space-y-2">
-                <label class="text-xs font-semibold text-zinc-400">Default Connection Timeout (seconds)</label>
-                <input type="number" value="5" class="w-full px-3 py-3 rounded-xl bg-zinc-900/60 border border-zinc-800 text-sm focus:outline-none focus:border-amber-500/50 transition-colors font-mono">
-              </div>
-              
-              <div class="space-y-2">
-                <label class="text-xs font-semibold text-zinc-400">Throughput Limit (Requests per second)</label>
-                <input type="number" value="100" class="w-full px-3 py-3 rounded-xl bg-zinc-900/60 border border-zinc-800 text-sm focus:outline-none focus:border-amber-500/50 transition-colors font-mono">
-              </div>
-            </div>
-
-            <div class="space-y-2">
-              <label class="text-xs font-semibold text-zinc-400">Custom HTTP Authorization Headers</label>
-              <textarea rows="3" placeholder="Authorization: Bearer mock-jwt-token-string&#10;X-Custom-Threat-Check: active" class="w-full p-4 rounded-xl bg-zinc-900/60 border border-zinc-800 text-xs focus:outline-none focus:border-amber-500/50 transition-colors font-mono text-zinc-300"></textarea>
-            </div>
-
-            <div class="flex items-center justify-between p-4 rounded-2xl bg-amber-500/5 border border-amber-500/10">
-              <div class="space-y-0.5">
-                <h4 class="text-xs font-bold text-amber-500">Enable Vulnerability Scanner Module</h4>
-                <p class="text-[10px] text-zinc-500">Injects SQL injection indicators, path traversals, and script injections</p>
-              </div>
-              <input type="checkbox" checked class="w-4 h-4 accent-amber-500 rounded bg-zinc-900 border border-zinc-800">
-            </div>
-
-            <button class="px-6 py-3 rounded-xl gold-gradient-bg text-zinc-950 font-bold text-xs uppercase shadow-lg shadow-amber-500/15">
-              Save Configuration
-            </button>
-          </div>
-        </div>
+      <div style="margin-top:16px;background:rgba(192,132,252,.05);border:1px solid rgba(192,132,252,.15);border-radius:14px;padding:14px 16px;display:flex;gap:10px;font-size:12px;color:#9ca3af;line-height:1.6">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        This panel mirrors your Python API Fuzzer engine output in real time. Run a session from the <strong style="color:#f3f4f6">Dashboard</strong> — the histogram, status codes, latency stats, log stream, and session summary all update live.
       </div>
+    </div><!-- /cmdcentre -->
 
-    </div>
-  </main>
 
-  <!-- Interactive Payload Diffing Side-Panel (Slide-out Drawer) -->
-  <div id="payload-diff-panel" class="fixed top-0 bottom-0 right-0 w-[550px] z-[1000] bg-zinc-950/95 border-l border-zinc-900 shadow-2xl p-6 flex flex-col justify-between">
-   </div>
-    <div class="space-y-6 flex-1 overflow-y-auto pr-1">
-      <!-- Header -->
-      <div class="flex justify-between items-center pb-4 border-b border-zinc-900">
-        <div class="flex items-center space-x-2.5">
-          <div class="w-7 h-7 rounded bg-amber-500/10 flex items-center justify-center text-amber-500">
-            <i data-lucide="git-diff" class="w-4 h-4"></i>
+    <!-- ═══ HISTORY PAGE ═══ -->
+    <div id="page-history" class="page">
+      <div class="page-section glass">
+        <div class="section-head">
+          <div class="section-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><polyline points="12 7 12 12 16 14"/></svg></div>
+          <div><div class="section-title">Fuzzing Test History</div><div class="section-sub">Archived fuzzing sessions and vulnerability scans</div></div>
+        </div>
+        <div class="hist-item">
+          <div>
+            <span class="hist-badge badge-session-gold">SESSION_9A23FF</span>
+            <div class="hist-item-url">http://127.0.0.1:8000/api/users</div>
+            <div class="hist-item-meta"><span>31-May-2026 11:57</span><span>•</span><span>52 Requests</span><span>•</span><span style="color:#ef4444">7 Server Crashes</span></div>
           </div>
-          <h3 class="text-sm font-bold font-title text-gray-200">Fuzzed Payload Audit & Diff</h3>
+          <button class="sm-btn sm-btn-amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export JSON</button>
         </div>
-        <button id="btn-close-diff" class="w-7 h-7 rounded-lg bg-zinc-900 border border-zinc-850 flex items-center justify-center hover:border-zinc-700 transition-colors text-zinc-500 hover:text-zinc-200">
-          <i data-lucide="x" class="w-4 h-4"></i>
-        </button>
-      </div>
-
-      <!-- Selected Request Meta Info -->
-      <div class="p-4 rounded-xl bg-zinc-900/40 border border-zinc-850 flex justify-between items-center text-xs">
-        <div class="space-y-1">
-          <div class="flex items-center space-x-2">
-            <span id="diff-meta-method" class="font-bold text-amber-500">POST</span>
-            <span id="diff-meta-endpoint" class="font-mono text-zinc-400">/api/users</span>
+        <div class="hist-item">
+          <div>
+            <span class="hist-badge badge-session-gray">SESSION_5F12C0</span>
+            <div class="hist-item-url">https://api.yourdomain.com/v1/auth/login</div>
+            <div class="hist-item-meta"><span>30-May-2026 15:42</span><span>•</span><span>120 Requests</span><span>•</span><span style="color:#22c55e">0 Vulnerabilities</span></div>
           </div>
-          <p id="diff-meta-strategy" class="text-zinc-500 font-semibold font-sans">Type swap strategy: username -> integer</p>
+          <button class="sm-btn sm-btn-amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export JSON</button>
         </div>
-        <div>
-          <span id="diff-meta-code" class="px-2 py-0.5 rounded text-[10px] font-bold text-red-500 bg-red-500/10 border border-red-500/20">500</span>
-        </div>
-      </div>
-
-      <!-- Diff JSON Viewer View -->
-      <div class="space-y-3">
-        <div class="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-zinc-500">
-          <span>Last Successful Baseline (200 OK)</span>
-          <span>Selected Fuzzed Payload</span>
-        </div>
-        
-        <div class="grid grid-cols-2 gap-4 h-[350px]">
-          <!-- Baseline Payload (Left) -->
-          <div class="rounded-xl border border-green-500/10 bg-green-500/[0.02] p-4 font-mono text-[10px] overflow-y-auto text-green-400 select-all border-dashed whitespace-pre-wrap" id="diff-baseline-json">
-            {
-              "username": "alice",
-              "age": 30,
-              "is_active": true
-            }
-          </div>
-          <!-- Selected Fuzzed Payload (Right) -->
-          <div class="rounded-xl border border-red-500/10 bg-red-500/[0.02] p-4 font-mono text-[10px] overflow-y-auto text-red-400 select-all border-dashed whitespace-pre-wrap animate-fade-in" id="diff-fuzzed-json">
-            {
-              "username": [],
-              "age": 30,
-              "is_active": true
-            }
-          </div>
-        </div>
-      </div>
-
-      <!-- Explanatory Analysis Tip -->
-      <div class="p-4 rounded-xl bg-amber-500/[0.02] border border-amber-500/10 text-[10px] leading-relaxed text-zinc-500 flex items-start space-x-2">
-        <i data-lucide="info" class="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5"></i>
-        <span>Diff analysis automatically parses both JSON trees and highlights modifications. Red-highlighted values in the fuzzed payload represent fuzzed types or boundary structures designed to evaluate backend schema resilience.</span>
       </div>
     </div>
-    
-    <div class="pt-4 border-t border-zinc-900 flex justify-end">
-      <button id="btn-close-diff-bottom" class="px-4 py-2.5 rounded-xl border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900 text-xs font-bold transition-colors">
-        Dismiss Audit
+
+
+    <!-- ═══ SETTINGS PAGE ═══ -->
+    <div id="page-settings" class="page">
+      <div class="page-section glass">
+        <div class="section-head">
+          <div class="section-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="20" y2="12"/><line x1="12" y1="18" x2="20" y2="18"/></svg></div>
+          <div><div class="section-title">Engine Configuration</div><div class="section-sub">Tune request parameters, headers, and timeouts</div></div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-field"><label>Connection Timeout (seconds)</label><input type="number" value="5" class="text-input"></div>
+          <div class="settings-field"><label>Throughput Limit (req/s)</label><input type="number" value="100" class="text-input"></div>
+        </div>
+        <div style="margin-bottom:18px">
+          <div class="settings-field"><label>Custom HTTP Authorization Headers</label></div>
+          <textarea rows="3" class="text-input" style="resize:none;padding:12px" placeholder="Authorization: Bearer mock-jwt-token&#10;X-Custom-Threat-Check: active"></textarea>
+        </div>
+        <div class="settings-check">
+          <div>
+            <div class="settings-check-title">Enable Vulnerability Scanner Module</div>
+            <div class="settings-check-sub">Injects SQL injection, path traversals, script injections</div>
+          </div>
+          <input type="checkbox" checked style="width:16px;height:16px;accent-color:#f59e0b">
+        </div>
+        <button class="save-btn gold-bg">Save Configuration</button>
+      </div>
+    </div>
+
+  </div><!-- /page-container -->
+</div><!-- /main -->
+
+
+<!-- ═══════════ DIFF DRAWER ═══════════ -->
+<div id="diff-drawer">
+  <div class="drawer-head">
+    <div class="drawer-title-row">
+      <div class="drawer-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><rect x="2" y="20" width="20" height="1"/></svg></div>
+      <div style="font-size:13px;font-weight:700;font-family:'Outfit',sans-serif">Fuzzed Payload Audit &amp; Diff</div>
+    </div>
+    <div class="close-btn" id="btn-close-diff"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+  </div>
+
+  <div class="diff-meta">
+    <div>
+      <div><span class="diff-meta-method" id="diff-method">POST</span><span class="diff-meta-endpoint" id="diff-endpoint">/api/users</span></div>
+      <div class="diff-meta-strategy" id="diff-strategy">Type swap strategy</div>
+    </div>
+    <span id="diff-code" class="code-badge badge-500">500</span>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px">
+    <div class="diff-col-head">Baseline (200 OK)</div>
+    <div class="diff-col-head">Fuzzed Payload</div>
+  </div>
+  <div class="diff-cols">
+    <div class="diff-box diff-box-green" id="diff-baseline"></div>
+    <div class="diff-box diff-box-red"   id="diff-fuzzed"></div>
+  </div>
+
+  <div class="diff-hint">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    Red-highlighted values are fuzzed types or boundary structures designed to evaluate backend schema resilience against malformed input.
+  </div>
+
+  <div class="drawer-footer">
+    <button class="sm-btn sm-btn-ghost" id="btn-close-diff-2">Dismiss Audit</button>
+  </div>
+</div>
+
+
+<!-- ═══════════ REPORT MODAL ═══════════ -->
+<div id="report-backdrop">
+  <div id="report-modal" class="glass">
+    <div class="close-btn modal-close" id="btn-close-report"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+
+    <div class="panel-header" style="margin-bottom:0">
+      <div class="panel-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><rect x="2" y="20" width="20" height="1"/></svg></div>
+      <div>
+        <div class="panel-title">Fuzz Session Scan Report</div>
+        <div style="font-size:10px;color:#6b7280;margin-top:1px">Security &amp; parser robustness analytics</div>
+      </div>
+    </div>
+
+    <div class="rep-grid">
+      <div class="rep-card"><div class="rep-card-label">Total Dispatched</div><div class="rep-card-val" id="rep-total">0</div></div>
+      <div class="rep-card"><div class="rep-card-label">Success Rate</div><div class="rep-card-val" id="rep-rate" style="color:#22c55e">0%</div></div>
+      <div class="rep-card"><div class="rep-card-label">Vulnerabilities</div><div class="rep-card-val" id="rep-vulns" style="color:#ef4444">0</div></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px">Scan Findings Categories</div>
+      <div class="rep-row"><span class="rep-row-label">Malformed JSON Syntax</span><span class="rep-row-val" id="rep-malformed">0</span></div>
+      <div class="rep-row"><span class="rep-row-label">Invalid Schema Types</span><span class="rep-row-val" id="rep-types">0</span></div>
+      <div class="rep-row"><span class="rep-row-label">Buffer &amp; Overflow Crashes</span><span class="rep-row-val" id="rep-overflow">0</span></div>
+      <div class="rep-row"><span class="rep-row-label">Latency Exhaustion (Timeouts)</span><span class="rep-row-val" id="rep-timeouts">0</span></div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="sm-btn sm-btn-amber" id="btn-rep-dl">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Save Local Report
       </button>
     </div>
   </div>
+</div>
 
-  <!-- Interactive Report Summary Modal Overlay -->
-  <div id="report-summary-modal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
-    <div class="w-[500px] glass-panel p-6 rounded-3xl space-y-6 relative border-amber-500/20 transform scale-95 transition-transform duration-300">
-      
-      <!-- Close trigger -->
-      <button id="btn-close-report" class="w-7 h-7 rounded-lg bg-zinc-900 border border-zinc-850 flex items-center justify-center hover:border-zinc-700 transition-colors text-zinc-500 hover:text-zinc-200 absolute right-6 top-6">
-        <i data-lucide="x" class="w-4 h-4"></i>
-      </button>
+<!-- ═══════════ APP SCRIPT ═══════════ -->
+<script>
+(function(){
+"use strict";
 
-      <!-- Header -->
-      <div class="flex items-center space-x-2.5">
-        <div class="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-500">
-          <i data-lucide="file-bar-chart" class="w-4.5 h-4.5"></i>
-        </div>
-        <div>
-          <h3 class="text-sm font-bold font-title text-gray-200 uppercase tracking-wide">Fuzz Session Scan Report</h3>
-          <p class="text-[10px] text-zinc-500 font-semibold tracking-wide">Security & parser robustness scan analytics</p>
-        </div>
-      </div>
+// ── helpers ──
+function g(id){return document.getElementById(id);}
+function txt(id,v){var e=g(id);if(e)e.textContent=v;}
+function htm(id,v){var e=g(id);if(e)e.innerHTML=v;}
+function wd(id,p){var e=g(id);if(e)e.style.width=p+"%";}
 
-      <!-- Primary Metrics Grid -->
-      <div class="grid grid-cols-3 gap-3">
-        <div class="p-3 bg-zinc-900/40 border border-zinc-850 rounded-xl text-center space-y-0.5">
-          <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Total Dispatched</p>
-          <p id="report-total-reqs" class="text-lg font-bold font-title font-mono text-gray-100">0</p>
-        </div>
-        <div class="p-3 bg-zinc-900/40 border border-zinc-850 rounded-xl text-center space-y-0.5">
-          <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Success Rate</p>
-          <p id="report-success-rate" class="text-lg font-bold font-title font-mono text-green-400">0%</p>
-        </div>
-        <div class="p-3 bg-zinc-900/40 border border-zinc-850 rounded-xl text-center space-y-0.5">
-          <p class="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Vulnerabilities</p>
-          <p id="report-vuln-count" class="text-lg font-bold font-title font-mono text-red-500">0</p>
-        </div>
-      </div>
+// ── nav ──
+var NAV_PAGES=["dashboard","cmdcentre","history","settings"];
+var TITLES={dashboard:"API Fuzzing Dashboard",cmdcentre:"Command Centre",history:"Fuzzing Test History",settings:"Engine Config"};
+function showPage(key){
+  NAV_PAGES.forEach(function(p){
+    var pg=g("page-"+p); if(pg){pg.classList.remove("active");}
+    var lk=g("nav-"+p);  if(lk){lk.className="nav-link"+(p===key?(key==="cmdcentre"?" active-purple":" active-amber"):"");}
+  });
+  var pg=g("page-"+key); if(pg) pg.classList.add("active");
+  txt("page-title",TITLES[key]||"");
+}
+NAV_PAGES.forEach(function(p){
+  var lk=g("nav-"+p);
+  if(lk) lk.addEventListener("click",function(e){e.preventDefault();showPage(p);});
+});
 
-      <!-- Structured Scan Findings Categories -->
-      <div class="space-y-2">
-        <h4 class="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Scan Findings Categories</h4>
-        <div class="space-y-1.5 max-h-48 overflow-y-auto pr-1 text-xs">
-          <!-- Item 1 -->
-          <div class="p-3 rounded-lg border border-zinc-900 bg-zinc-900/10 flex justify-between items-center">
-            <span class="text-zinc-400">Malformed JSON Syntax Checks</span>
-            <span id="report-cat-malformed" class="font-mono text-zinc-500 font-bold bg-zinc-900 px-2 py-0.5 rounded">0</span>
-          </div>
-          <!-- Item 2 -->
-          <div class="p-3 rounded-lg border border-zinc-900 bg-zinc-900/10 flex justify-between items-center">
-            <span class="text-zinc-400">Invalid Schema Type Violations</span>
-            <span id="report-cat-types" class="font-mono text-zinc-500 font-bold bg-zinc-900 px-2 py-0.5 rounded">0</span>
-          </div>
-          <!-- Item 3 -->
-          <div class="p-3 rounded-lg border border-zinc-900 bg-zinc-900/10 flex justify-between items-center">
-            <span class="text-zinc-400">Database Buffer & Overflow Crashes</span>
-            <span id="report-cat-overflow" class="font-mono text-zinc-500 font-bold bg-zinc-900 px-2 py-0.5 rounded">0</span>
-          </div>
-          <!-- Item 4 -->
-          <div class="p-3 rounded-lg border border-zinc-900 bg-zinc-900/10 flex justify-between items-center">
-            <span class="text-zinc-400">Server Latency Exhaustion (Timeouts)</span>
-            <span id="report-cat-timeouts" class="font-mono text-zinc-500 font-bold bg-zinc-900 px-2 py-0.5 rounded">0</span>
-          </div>
-        </div>
-      </div>
+// ── slider ──
+var slider=g("conc-slider");
+if(slider) slider.addEventListener("input",function(){txt("conc-display",this.value+" threads");});
 
-      <!-- Action -->
-      <div class="pt-4 border-t border-zinc-900 flex justify-end space-x-3">
-        <button id="btn-report-download" class="px-4 py-2 rounded-xl border border-amber-500/20 hover:border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 text-xs font-bold transition-all flex items-center space-x-1.5 shadow-lg shadow-amber-500/5">
-          <i data-lucide="download" class="w-3.5 h-3.5"></i>
-          <span>Save Local Report</span>
-        </button>
-      </div>
+// ── strategies ──
+var S=[
+  {lbl:"Malformed JSON: trailing comma",   code:400,mn:12,  mx:25,  cat:"malformed",pay:'{"username":"alice","age":30,}'},
+  {lbl:"Malformed JSON: missing brace",    code:400,mn:10,  mx:18,  cat:"malformed",pay:'{"username":"alice","age":30'},
+  {lbl:"Malformed JSON: missing separator",code:400,mn:15,  mx:22,  cat:"malformed",pay:'{"username":"alice" "age":30}'},
+  {lbl:"Malformed JSON: extra junk bytes", code:400,mn:18,  mx:30,  cat:"malformed",pay:'{"username":"alice","age":30}JUNK'},
+  {lbl:"Baseline validation check",        code:200,mn:35,  mx:50,  cat:"success",  pay:{username:"alice",age:30,is_active:true}},
+  {lbl:"Empty body fallback",              code:200,mn:32,  mx:45,  cat:"success",  pay:{}},
+  {lbl:"Type swap: username → integer",    code:422,mn:22,  mx:40,  cat:"types",    pay:{username:12345,age:30,is_active:true}},
+  {lbl:"Type swap: age → boolean",         code:422,mn:20,  mx:38,  cat:"types",    pay:{username:"alice",age:true,is_active:true}},
+  {lbl:"Type swap: age → list",            code:422,mn:25,  mx:42,  cat:"types",    pay:{username:"alice",age:[],is_active:true}},
+  {lbl:"Type swap: is_active → string",    code:422,mn:21,  mx:35,  cat:"types",    pay:{username:"alice",age:30,is_active:"bad_type"}},
+  {lbl:"Overflow: username >5000 chars",   code:500,mn:90,  mx:140, cat:"overflow", msg:"DB Column Overflow",           pay:{username:"A".repeat(60)+"…(6000)",age:30,is_active:true}},
+  {lbl:"Overflow: age → 1.79e308",         code:500,mn:85,  mx:130, cat:"overflow", msg:"Arithmetic Error: Float limit",pay:{username:"alice",age:1.79e308,is_active:true}},
+  {lbl:"Traversal: ../../etc/passwd",      code:500,mn:110, mx:180, cat:"overflow", msg:"Security Filter Exception",    pay:{username:"../../etc/passwd",age:30,is_active:true}},
+  {lbl:"Timeout: age = -1",               code:408,mn:5000,mx:5000,cat:"timeouts", msg:"Read Timeout (5.0s)",          pay:{username:"alice",age:-1,is_active:true}},
+  {lbl:"Timeout: age = -2147483648",      code:408,mn:5000,mx:5000,cat:"timeouts", msg:"Read Timeout (5.0s)",          pay:{username:"alice",age:-2147483648,is_active:true}}
+];
 
-    </div>
-  </div>
+// ── state ──
+var records=[], lastOk={username:"alice",age:30,is_active:true};
+var fuzzing=false, timer=null, total=0, failed=0, lats=[];
+var MAX=52;
 
-  <!-- Interactive script -->
-  <script src="app.js"></script>
+// ── chart ──
+var chart=null;
+var cv=g("latency-chart");
+if(cv&&window.Chart){
+  var ctx=cv.getContext("2d");
+  var gr=ctx.createLinearGradient(0,0,0,200);
+  gr.addColorStop(0,"rgba(245,158,11,.22)"); gr.addColorStop(1,"rgba(245,158,11,0)");
+  chart=new Chart(ctx,{
+    type:"line",
+    data:{labels:[],datasets:[{data:[],borderColor:"#f59e0b",borderWidth:1.5,pointBackgroundColor:"#f59e0b",pointBorderColor:"#070709",pointRadius:2,pointHoverRadius:5,fill:true,backgroundColor:gr,tension:.2,spanGaps:true}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},
+      scales:{x:{grid:{display:false},ticks:{color:"#4b5563",font:{size:8}}},y:{grid:{color:"rgba(245,158,11,.02)"},ticks:{color:"#4b5563",font:{size:8}},min:0}}}
+  });
+}
+
+// ── histogram ──
+function bucket(ms){if(ms<10)return 0;if(ms<50)return 1;if(ms<100)return 2;if(ms<250)return 3;if(ms<500)return 4;if(ms<1000)return 5;return 6;}
+function updateHist(){
+  var b=[0,0,0,0,0,0,0];
+  lats.forEach(function(ms){b[bucket(ms)]++;});
+  var mx=Math.max.apply(null,b.concat(1));
+  for(var i=0;i<7;i++){wd("h"+i,Math.round(b[i]/mx*100));txt("hc"+i,"("+b[i]+")");}
+}
+
+// ── cmd centre ──
+function updateCmd(){
+  var url=g("target-url")?g("target-url").value:"http://127.0.0.1:8000/api/users";
+  var mth=g("method-sel")?g("method-sel").value:"POST";
+  txt("cmd-target",url); txt("cmd-method",mth);
+  var n=total||1;
+  var s2=records.filter(function(r){return r.code>=200&&r.code<300;}).length;
+  var s3=records.filter(function(r){return r.code>=300&&r.code<400;}).length;
+  var s4=records.filter(function(r){return r.code>=400&&r.code<500&&r.code!==408;}).length;
+  var s5=records.filter(function(r){return r.code>=500;}).length;
+  var st=records.filter(function(r){return r.code===408;}).length;
+  var p=function(v){return total?((v/total)*100).toFixed(1)+"%":"0.0%";};
+  txt("cmd-s2xx",s2);txt("cmd-s2xx-p",p(s2));
+  txt("cmd-s3xx",s3);txt("cmd-s3xx-p",p(s3));
+  txt("cmd-s4xx",s4);txt("cmd-s4xx-p",p(s4));
+  txt("cmd-s5xx",s5);txt("cmd-s5xx-p",p(s5));
+  txt("cmd-sto", st);txt("cmd-sto-p", p(st));
+  txt("cmd-sne", 0); txt("cmd-sne-p","0.0%");
+  if(lats.length){
+    var so=lats.slice().sort(function(a,b){return a-b;});
+    var avg=lats.reduce(function(a,b){return a+b;},0)/lats.length;
+    var p95v=so[Math.min(Math.ceil(so.length*.95)-1,so.length-1)];
+    txt("cmd-min",so[0].toFixed(1)+" ms");txt("cmd-max",so[so.length-1].toFixed(1)+" ms");
+    txt("cmd-avg",avg.toFixed(1)+" ms");txt("cmd-p95",p95v.toFixed(1)+" ms");
+  }else{["cmd-min","cmd-max","cmd-avg","cmd-p95"].forEach(function(id){txt(id,"0.0 ms");});}
+  var prog=total>0?(total/MAX*100):0;
+  wd("cmd-prog-fill",Math.min(prog,100));txt("cmd-prog-text",total+" / "+MAX+" ("+prog.toFixed(1)+"%)");
+  updateHist();
+}
+
+// ── log stream ──
+function pushLog(lvl,msg,pay){
+  var el=g("cmd-logs"); if(!el)return;
+  var d=new Date();
+  var ts="["+d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")+" "+d.toLocaleTimeString()+","+String(d.getMilliseconds()).padStart(3,"0")+"]";
+  var cls=lvl==="INFO"?"log-info":lvl==="WARN"?"log-warn":"log-err";
+  var div=document.createElement("div"); div.className="log-entry";
+  div.innerHTML='<span class="log-ts">'+ts+'</span> <span class="'+cls+'">'+lvl+':</span> <span class="log-msg">'+msg+'</span>'+(pay?' <span class="log-pay">'+pay+'</span>':"");
+  el.insertBefore(div,el.firstChild);
+  while(el.children.length>60) el.removeChild(el.lastChild);
+}
+
+// ── summary ──
+function showSummary(){
+  var s2=records.filter(function(r){return r.code>=200&&r.code<300;}).length;
+  var s4=records.filter(function(r){return r.code>=400&&r.code<500&&r.code!==408;}).length;
+  var s5=records.filter(function(r){return r.code>=500;}).length;
+  var st=records.filter(function(r){return r.code===408;}).length;
+  var so=lats.slice().sort(function(a,b){return a-b;});
+  var avg=lats.length?(lats.reduce(function(a,b){return a+b;},0)/lats.length).toFixed(1):"0.0";
+  var p95=so.length?so[Math.min(Math.ceil(so.length*.95)-1,so.length-1)].toFixed(1):"0.0";
+  txt("sum-total",total+" / "+MAX);txt("sum-success",s2);txt("sum-client",s4);txt("sum-server",s5);txt("sum-timeout",st);
+  txt("sum-avg",avg+" ms | 95th: "+p95+" ms");
+  var box=g("cmd-summary"); if(box) box.classList.add("show");
+  pushLog("INFO","Structured results saved to fuzz_results.json");
+}
+
+// ── start/stop ──
+function startFuzzing(){
+  fuzzing=true; total=0; failed=0; lats=[]; records=[];
+  var box=g("cmd-summary"); if(box) box.classList.remove("show");
+  var logs=g("cmd-logs"); if(logs) logs.innerHTML="";
+  var btn=g("btn-start");
+  if(btn){btn.className="stopped running";btn.innerHTML='<svg viewBox="0 0 24 24" fill="white" stroke="none" width="16" height="16"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>STOP FUZZING RUN';}
+  txt("status-text","Engine Active");
+  var dot=g("status-dot"); if(dot) dot.className="dot-active";
+  var sv=g("stat-status-val"); if(sv){sv.textContent="ACTIVE";sv.style.color="#f59e0b";}
+  var ov=g("chart-overlay"); if(ov) ov.classList.add("hidden-overlay");
+  var tb=g("logs-tbody"); if(tb) tb.innerHTML="";
+  if(chart){chart.data.labels=[];chart.data.datasets[0].data=[];chart.update("none");}
+  updateCmd();
+  pushLog("INFO","Starting API Fuzzing Tool...");
+  pushLog("INFO","Initializing payload generator, config validation, and async request pool.");
+  setTimeout(function(){pushLog("INFO","Successfully loaded JSON template from user_template.json");},350);
+  setTimeout(function(){pushLog("INFO","Generated "+MAX+" fuzzed payloads (Type, Boundary, Malformed JSON)");},700);
+  setTimeout(function(){pushLog("INFO","Spawning asynchronous execution engine...");},1050);
+  var sv2=g("conc-slider"); var iv=Math.max(60,Math.floor(2600/(sv2?parseInt(sv2.value):25)));
+  timer=setInterval(function(){if(total>=MAX){stopFuzzing(true);}else{tick();}},iv);
+}
+
+function stopFuzzing(done){
+  fuzzing=false; clearInterval(timer);
+  var btn=g("btn-start");
+  if(btn){btn.className="stopped gold-bg";btn.innerHTML='<svg viewBox="0 0 24 24" fill="#070709" stroke="none" width="16" height="16"><polygon points="5 3 19 12 5 21 5 3"/></svg>START FUZZING TEST';}
+  if(done){
+    txt("status-text","Engine Standby — Scan Complete");
+    var dot=g("status-dot"); if(dot) dot.className="dot-idle";
+    var sv=g("stat-status-val"); if(sv){sv.textContent="COMPLETE";sv.style.color="#22c55e";}
+    updateCmd(); showSummary();
+    setTimeout(function(){openReport();},800);
+  }else{
+    txt("status-text","Engine Standby");
+    var dot2=g("status-dot"); if(dot2) dot2.className="dot-idle";
+    var sv2=g("stat-status-val"); if(sv2){sv2.textContent="STANDBY";sv2.style.color="#6b7280";}
+  }
+}
+
+function ri(mn,mx){return Math.floor(Math.random()*(mx-mn+1))+mn;}
+function pick(a){return a[Math.floor(Math.random()*a.length)];}
+
+function tick(){
+  total++;
+  var rng=Math.random(), pool;
+  if(rng<.28)      pool=S.filter(function(s){return s.code===200;});
+  else if(rng<.78) pool=S.filter(function(s){return s.code===400||s.code===422;});
+  else if(rng<.92) pool=S.filter(function(s){return s.code===500;});
+  else              pool=S.filter(function(s){return s.code===408;});
+  var s=pick(pool), lat=ri(s.mn,s.mx);
+  lats.push(lat);
+  if(s.code>=400) failed++;
+  if(s.code===200&&typeof s.pay==="object"&&Object.keys(s.pay).length>0) lastOk=s.pay;
+  var url=g("target-url")?g("target-url").value:"http://127.0.0.1:8000/api/users";
+  var mth=g("method-sel")?g("method-sel").value:"POST";
+  var rec={ts:new Date().toLocaleTimeString(),url:url,mth:mth,code:s.code,lbl:s.lbl,cat:s.cat,lat:lat,msg:s.msg||"",pay:s.pay};
+  records.push(rec);
+  // stats
+  txt("stat-total",total); txt("stat-failed",failed);
+  txt("stat-fail-pct",((failed/total)*100).toFixed(1)+"%");
+  var sl=g("conc-slider"); txt("stat-rate",(Math.floor(Math.random()*10)+Math.floor((sl?parseInt(sl.value):25)*.8))+" req/s");
+  var al=(lats.reduce(function(a,b){return a+b;},0)/lats.length).toFixed(1);
+  txt("stat-latency",al+" ms");
+  var so2=lats.slice().sort(function(a,b){return a-b;});
+  txt("stat-p95",so2[Math.min(Math.ceil(so2.length*.95)-1,so2.length-1)].toFixed(1)+" ms");
+  wd("stat-prog-fill",total/MAX*100);
+  // log table
+  var fv=g("filter-log")?g("filter-log").value:"all";
+  var intrig=[400,403,408,429,500].indexOf(s.code)!==-1;
+  if(fv==="all"||(fv==="interesting"&&intrig)) renderRow(rec);
+  // chart
+  if(chart){chart.data.labels.push("#"+total);chart.data.datasets[0].data.push(lat);if(chart.data.labels.length>20){chart.data.labels.shift();chart.data.datasets[0].data.shift();}chart.update("none");}
+  // cmd
+  updateCmd();
+  if(s.code>=500) pushLog("ERROR","Server Error ("+s.code+") for payload:",typeof s.pay==="object"?JSON.stringify(s.pay):s.pay);
+  else if(s.code===408) pushLog("WARN","Timeout (408) — "+(s.msg||"Read timeout exceeded"));
+}
+
+// ── row render ──
+function badge(c){
+  if(c===200) return "code-badge badge-200";
+  if(c===422) return "code-badge badge-422";
+  if(c===400) return "code-badge badge-400";
+  if(c===408) return "code-badge badge-408";
+  return "code-badge badge-500";
+}
+function renderRow(r){
+  var tb=g("logs-tbody"); if(!tb) return;
+  var tr=document.createElement("tr");
+  tr.innerHTML='<td style="color:#6b7280;font-family:JetBrains Mono,monospace">'+r.ts+'</td>'+
+    '<td style="font-family:JetBrains Mono,monospace;font-size:10px;color:#d1d5db">'+r.url+'</td>'+
+    '<td style="color:#f59e0b;font-weight:700">'+r.mth+'</td>'+
+    '<td><span class="'+badge(r.code)+'">'+r.code+'</span></td>'+
+    '<td style="color:#9ca3af"><span>'+r.lbl+'</span>'+(r.msg?'<span class="err-tag">'+r.msg+'</span>':"")+'</td>';
+  tr.addEventListener("click",function(){openDiff(r);});
+  tb.insertBefore(tr,tb.firstChild);
+  while(tb.children.length>30) tb.removeChild(tb.lastChild);
+}
+
+// ── filter ──
+var fl=g("filter-log");
+if(fl) fl.addEventListener("change",function(){
+  var tb=g("logs-tbody"); if(!tb) return;
+  tb.innerHTML="";
+  var val=this.value;
+  var list=val==="all"?records:records.filter(function(r){return [400,403,408,429,500].indexOf(r.code)!==-1;});
+  if(!list.length){tb.innerHTML='<tr class="empty-row"><td colspan="5">No records match filter.</td></tr>';}
+  else list.slice(-30).reverse().forEach(renderRow);
+});
+
+// ── diff drawer ──
+function diffHtml(base,fuzz){
+  if(typeof fuzz==="string") return '<span style="background:rgba(220,38,38,.2);color:#f87171;font-weight:700;padding:2px 6px;border-radius:3px;display:inline-block;width:100%">'+fuzz+'</span>';
+  var out=["{"];
+  Object.keys(fuzz).forEach(function(k,i,arr){
+    var v=fuzz[k], diff=base[k]===undefined||JSON.stringify(v)!==JSON.stringify(base[k]);
+    var line='  "'+k+'": '+JSON.stringify(v)+(i<arr.length-1?",":"");
+    out.push(diff?'<span style="background:rgba(220,38,38,.15);color:#f87171;font-weight:700;padding:1px 4px;border-radius:3px;display:inline-block;width:100%">'+line+'</span>':line);
+  });
+  out.push("}"); return out.join("\n");
+}
+function openDiff(r){
+  txt("diff-method",r.mth); txt("diff-endpoint",r.url); txt("diff-strategy",r.lbl); txt("diff-code",r.code);
+  var dc=g("diff-code");
+  if(dc){var cl="code-badge ";cl+=r.code===200?"badge-200":r.code===422?"badge-422":r.code===400?"badge-400":"badge-500";dc.className=cl;}
+  txt("diff-baseline",JSON.stringify(lastOk,null,2)); htm("diff-fuzzed",diffHtml(lastOk,r.pay));
+  var dw=g("diff-drawer"); if(dw) dw.classList.add("open");
+}
+function closeDiff(){var dw=g("diff-drawer"); if(dw) dw.classList.remove("open");}
+var bd1=g("btn-close-diff"), bd2=g("btn-close-diff-2");
+if(bd1) bd1.addEventListener("click",closeDiff);
+if(bd2) bd2.addEventListener("click",closeDiff);
+
+// ── report ──
+function openReport(){
+  txt("rep-total",total);
+  txt("rep-rate",total?(((total-failed)/total)*100).toFixed(1)+"%":"0%");
+  txt("rep-vulns",failed);
+  txt("rep-malformed",records.filter(function(r){return r.cat==="malformed";}).length);
+  txt("rep-types",    records.filter(function(r){return r.cat==="types";}).length);
+  txt("rep-overflow", records.filter(function(r){return r.cat==="overflow";}).length);
+  txt("rep-timeouts", records.filter(function(r){return r.cat==="timeouts";}).length);
+  var b=g("report-backdrop"); if(b) b.classList.add("open");
+}
+function closeReport(){var b=g("report-backdrop"); if(b) b.classList.remove("open");}
+var brpt=g("btn-report"), bcr=g("btn-close-report"), rbk=g("report-backdrop");
+if(brpt) brpt.addEventListener("click",openReport);
+if(bcr)  bcr.addEventListener("click",closeReport);
+if(rbk)  rbk.addEventListener("click",function(e){if(e.target===rbk) closeReport();});
+
+// ── CSV ──
+function csv(data){
+  if(!data.length){alert("No records to export.");return;}
+  var hdr=["Timestamp","Endpoint","Method","Code","Strategy","Payload"];
+  var rows=data.map(function(r){
+    return [r.ts,r.url,r.mth,r.code,r.lbl,typeof r.pay==="object"?JSON.stringify(r.pay):r.pay]
+      .map(function(v){return'"'+String(v).replace(/"/g,'""')+'"';}).join(",");
+  });
+  var blob=new Blob([hdr.join(",")+"\n"+rows.join("\n")],{type:"text/csv"});
+  var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="fuzzshield_"+Date.now()+".csv";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+var bex=g("btn-export"), brdl=g("btn-rep-dl");
+if(bex)  bex.addEventListener("click",function(){var fv=g("filter-log")?g("filter-log").value:"all";csv(fv==="all"?records:records.filter(function(r){return [400,403,408,429,500].indexOf(r.code)!==-1;}));});
+if(brdl) brdl.addEventListener("click",function(){csv(records);});
+
+// ── clear ──
+var bcl=g("btn-clear");
+if(bcl) bcl.addEventListener("click",function(){var tb=g("logs-tbody");if(tb) tb.innerHTML='<tr class="empty-row"><td colspan="5">Logs cleared.</td></tr>';records=[];});
+
+// ── start/stop btn ──
+var bst=g("btn-start");
+if(bst) bst.addEventListener("click",function(){if(fuzzing) stopFuzzing(false); else startFuzzing();});
+
+// ── init ──
+updateCmd();
+
+})();
+</script>
 </body>
 </html>
